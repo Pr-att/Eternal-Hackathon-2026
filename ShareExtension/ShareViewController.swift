@@ -69,32 +69,65 @@ final class ShareViewController: UIViewController {
 
     // MARK: - Opening the host app
 
-    /// Launches the main app (`eternalhackathon://shared`). Uses the supported
-    /// `NSExtensionContext.open(_:)` first, then the responder-chain fallback
-    /// for older iOS, and completes the request once the open is dispatched.
+    /// Launches the main app (`eternalhackathon://shared`).
+    ///
+    /// Opening its OWN containing app from a Share Extension is version-finicky,
+    /// so we fire BOTH known mechanisms and never let teardown cancel the launch:
+    ///
+    /// 1. Responder-chain `openURL:` on the real `UIApplication`. This is the
+    ///    battle-tested path. The previous code matched *any* responder that
+    ///    merely responded to `openURL:` — on iOS 18+ the first match is often
+    ///    NOT the application, so the call no-op'd and the sheet just flashed
+    ///    and dismissed. We now cast to `UIApplication` so we hit the real one.
+    /// 2. `NSExtensionContext.open(_:)` — the sanctioned API; harmless if it
+    ///    no-ops for a custom scheme.
+    ///
+    /// `completeRequest` (which dismisses the sheet) is deferred behind a short
+    /// watchdog. Calling it synchronously can cancel the pending launch and
+    /// bounce focus back to the host app (Instagram) — the "flash and dismiss".
     private func openHostApp(_ url: URL) {
-        guard let context = extensionContext else { complete(); return }
-        context.open(url) { [weak self] success in
-            guard let self else { return }
-            if !success { self.openViaResponderChain(url) }
-            self.complete()
+        let opened = openViaResponderChain(url)
+        NSLog("[ShareExtension] openHostApp \(url.absoluteString) responderChainOpened=\(opened)")
+        extensionContext?.open(url) { success in
+            NSLog("[ShareExtension] extensionContext.open success=\(success)")
+        }
+        // Give the launch a beat to take effect before tearing the extension
+        // down. If the app came forward, this no-ops; if it didn't, it releases
+        // the sheet so we never hang.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.complete()
         }
     }
 
-    /// Walks the responder chain for an object implementing `openURL:` and
-    /// invokes it. Fallback for iOS versions where `extensionContext.open`
-    /// declines a custom scheme.
+    /// Walks the responder chain to the hosting `UIApplication` and asks it to
+    /// open our custom URL scheme — the reliable way for a Share Extension to
+    /// launch its containing app.
+    ///
+    /// iOS 18+ stopped honoring the legacy one-arg `openURL:` selector (which
+    /// earlier code used — that's why the sheet just flashed and dismissed). The
+    /// surviving selector is the three-arg `openURL:options:completionHandler:`.
+    /// `perform(_:with:)` can only pass one argument, so we resolve the method's
+    /// implementation (`IMP`) and invoke it through a typed C function pointer.
+    /// `UIApplication.open(_:…)` itself is compile-time unavailable in an
+    /// extension, so the IMP route is also how we sidestep that.
     @discardableResult
     private func openViaResponderChain(_ url: URL) -> Bool {
-        let selector = sel_registerName("openURL:")
+        typealias OpenURLIMP = @convention(c) (AnyObject, Selector, NSURL, NSDictionary, Any?) -> Void
+        let selector = NSSelectorFromString("openURL:options:completionHandler:")
+
         var responder: UIResponder? = self
         while let current = responder {
-            if current !== self, current.responds(to: selector) {
-                _ = current.perform(selector, with: url)
+            if current is UIApplication, current.responds(to: selector),
+               let method = class_getInstanceMethod(type(of: current), selector) {
+                let imp = method_getImplementation(method)
+                let open = unsafeBitCast(imp, to: OpenURLIMP.self)
+                open(current, selector, url as NSURL, NSDictionary(), nil)
+                NSLog("[ShareExtension] invoked openURL:options:completionHandler: on \(type(of: current))")
                 return true
             }
             responder = current.next
         }
+        NSLog("[ShareExtension] responder chain found no UIApplication responding to openURL:options:completionHandler:")
         return false
     }
 
