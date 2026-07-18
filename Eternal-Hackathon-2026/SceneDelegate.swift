@@ -17,7 +17,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
-        guard let _ = (scene as? UIWindowScene) else { return }
+        guard let windowScene = (scene as? UIWindowScene) else { return }
+
+        // The home screen is `HomeViewController` (the AI Recipe Shopping flow),
+        // presented programmatically inside a nav controller with the bar hidden
+        // in favour of the custom in-screen headers. This replaces the old
+        // storyboard `ViewController` test harness.
+        let nav = UINavigationController(rootViewController: HomeViewController())
+        nav.navigationBar.isHidden = true
+        nav.view.backgroundColor = Theme.Color.background
+
+        let window = UIWindow(windowScene: windowScene)
+        window.rootViewController = nav
+        window.overrideUserInterfaceStyle = .dark   // this design is dark-only
+        window.makeKeyAndVisible()
+        self.window = window
 
         // Cold start via deep link: the URL is delivered here, not in
         // openURLContexts.
@@ -40,29 +54,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     // MARK: - Routing
 
-    /// Presents the destination screen for a resolved route.
+    /// A shared link no longer opens a separate inbox — the home screen
+    /// (`HomeViewController`) observes `.didReceiveSharedContent` and pulls the
+    /// URL into its link field. `AppLaunchManager.handle` has already posted
+    /// that signal, so there is nothing to present here.
     private func route(_ route: DeepLinkRoute) {
         guard route == .sharedInbox else { return }
-        DispatchQueue.main.async { [weak self] in
-            self?.presentSharedInbox()
-        }
-    }
-
-    private func presentSharedInbox() {
-        guard let root = window?.rootViewController else { return }
-        // Walk to the top-most presented controller so we push the inbox over
-        // whatever screen is currently on top, not just the root.
-        var top = root
-        while let presented = top.presentedViewController { top = presented }
-        // Avoid stacking multiple inbox screens.
-        if top is UINavigationController { return }
-
-        let inbox = SharedInboxViewController()
-        let nav = UINavigationController(rootViewController: inbox)
-        inbox.navigationItem.rightBarButtonItem = UIBarButtonItem(
-            systemItem: .done,
-            primaryAction: UIAction { [weak nav] _ in nav?.dismiss(animated: true) })
-        nav.modalPresentationStyle = .fullScreen
-        top.present(nav, animated: true)
+        // Home screen consumes the shared link via notification; no-op here.
     }
 }
