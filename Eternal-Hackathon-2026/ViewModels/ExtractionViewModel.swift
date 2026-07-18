@@ -28,7 +28,9 @@ final class ExtractionViewModel {
     /// backend's ingestion.py) is downloaded and analyzed; anything else is
     /// treated as raw recipe text.
     func extract(fromLink link: String) async {
+        // terminal copy-paste often brings the JSON quotes along with video_url
         let link = link.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’,"))
         guard link.lowercased().hasPrefix("http"), let url = URL(string: link) else {
             await extract(text: link)
             return
