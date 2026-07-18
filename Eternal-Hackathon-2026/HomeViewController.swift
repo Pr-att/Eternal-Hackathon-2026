@@ -35,6 +35,36 @@ final class HomeViewController: UIViewController {
             self, selector: #selector(consumeSharedLink),
             name: .didReceiveSharedContent, object: nil)
         consumeSharedLink()
+
+        // Lift the link field above the keyboard when it appears.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(keyboardWillChange(_:)),
+            name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillChange(_ note: Notification) {
+        guard let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        else { return }
+
+        // Inset the scroll view by the part of the keyboard that overlaps it,
+        // then scroll the link field into the now-smaller visible area.
+        let overlap = view.bounds.height - view.convert(frame, from: nil).minY
+        let inset = max(0, overlap - view.safeAreaInsets.bottom)
+        scrollView.contentInset.bottom = inset
+        scrollView.verticalScrollIndicatorInsets.bottom = inset
+
+        if linkField.isFirstResponder {
+            let target = linkField.convert(linkField.bounds, to: scrollView).insetBy(dx: 0, dy: -24)
+            scrollView.scrollRectToVisible(target, animated: true)
+        }
+    }
+
+    @objc private func keyboardWillHide(_ note: Notification) {
+        scrollView.contentInset.bottom = 0
+        scrollView.verticalScrollIndicatorInsets.bottom = 0
     }
 
     /// Pulls the newest shared `.url` item into the link field so sharing from

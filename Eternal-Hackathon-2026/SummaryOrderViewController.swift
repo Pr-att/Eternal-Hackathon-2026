@@ -229,7 +229,7 @@ final class SummaryOrderViewController: UIViewController {
         bar.backgroundColor = Theme.Color.background
         bar.translatesAutoresizingMaskIntoConstraints = false
 
-        let order = GradientButton(title: "Order now from Blinkit", systemImage: "arrow.right", trailing: true)
+        let order = GradientButton(title: "Order Now", systemImage: "arrow.right", trailing: true)
         order.translatesAutoresizingMaskIntoConstraints = false
         order.addTarget(self, action: #selector(orderTapped), for: .touchUpInside)
 

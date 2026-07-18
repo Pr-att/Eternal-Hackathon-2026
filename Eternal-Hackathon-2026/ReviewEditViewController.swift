@@ -71,13 +71,16 @@ final class GroceryItemCell: UITableViewCell {
     }
 
     private func buildStepper() {
+        // Small glyphs so the stepper reads as a compact control rather than
+        // two chunky buttons.
+        let glyphConfig = UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
         for button in [minusButton, plusButton] {
             button.tintColor = Theme.Color.green   // match the "Ingredients" accent
             button.translatesAutoresizingMaskIntoConstraints = false
-            button.widthAnchor.constraint(equalToConstant: 30).isActive = true
+            button.widthAnchor.constraint(equalToConstant: 22).isActive = true
         }
-        minusButton.setImage(UIImage(systemName: "minus"), for: .normal)
-        plusButton.setImage(UIImage(systemName: "plus"), for: .normal)
+        minusButton.setImage(UIImage(systemName: "minus", withConfiguration: glyphConfig), for: .normal)
+        plusButton.setImage(UIImage(systemName: "plus", withConfiguration: glyphConfig), for: .normal)
         minusButton.addTarget(self, action: #selector(minusTapped), for: .touchUpInside)
         plusButton.addTarget(self, action: #selector(plusTapped), for: .touchUpInside)
 
@@ -318,21 +321,11 @@ final class ReviewEditViewController: UIViewController {
         bar.layer.borderColor = Theme.Color.stroke.cgColor
         bar.translatesAutoresizingMaskIntoConstraints = false
 
-        let lock = UIImageView(image: UIImage(systemName: "lock.fill"))
-        lock.tintColor = Theme.Color.green
-        lock.contentMode = .scaleAspectFit
-        lock.translatesAutoresizingMaskIntoConstraints = false
-        lock.widthAnchor.constraint(equalToConstant: 20).isActive = true
-
         itemCountLabel.font = Theme.Font.headline()
         let sub = Make.label("Ready to add", font: Theme.Font.caption(), color: Theme.Color.textSecondary)
-        let textStack = UIStackView(arrangedSubviews: [itemCountLabel, sub])
-        textStack.axis = .vertical
-        textStack.spacing = 2
-
-        let leftStack = UIStackView(arrangedSubviews: [lock, textStack])
-        leftStack.spacing = 10
-        leftStack.alignment = .center
+        let leftStack = UIStackView(arrangedSubviews: [itemCountLabel, sub])
+        leftStack.axis = .vertical
+        leftStack.spacing = 2
 
         let cont = GradientButton(title: "Continue", systemImage: "arrow.right", trailing: true)
         cont.translatesAutoresizingMaskIntoConstraints = false
