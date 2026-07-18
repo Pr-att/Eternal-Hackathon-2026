@@ -70,6 +70,8 @@ enum GroceryEmoji {
 struct DemoRecipe {
     let title: String
     let emoji: String
+    /// A short, appetizing summary shown above the ingredient list.
+    let description: String
     /// Hardcoded ingredients shown when the chip is tapped (name, category).
     let ingredients: [(name: String, category: ItemCategory)]
 }
@@ -177,7 +179,9 @@ enum IngredientIcon {
 enum SampleData {
 
     static let demoRecipes: [DemoRecipe] = [
-        DemoRecipe(title: "Butter Chicken", emoji: "🍛", ingredients: [
+        DemoRecipe(title: "Butter Chicken", emoji: "🍛",
+                   description: "Tender chicken simmered in a velvety tomato-butter gravy, finished with cream and kasuri methi. A rich, mildly spiced North Indian classic best served with naan or rice.",
+                   ingredients: [
             ("chicken", .consumable), ("butter", .consumable), ("cream", .consumable),
             ("onion", .consumable), ("tomato", .consumable), ("curd", .consumable),
             ("ginger garlic paste", .consumable), ("garam masala", .consumable),
@@ -186,7 +190,9 @@ enum SampleData {
             ("salt", .staple), ("oil", .staple),
             ("pan", .equipment)
         ]),
-        DemoRecipe(title: "Veg Biryani", emoji: "🍚", ingredients: [
+        DemoRecipe(title: "Veg Biryani", emoji: "🍚",
+                   description: "Fragrant basmati rice layered with spiced mixed vegetables, fresh mint and fried onions, slow-cooked on dum. A wholesome one-pot meal that's a party on its own.",
+                   ingredients: [
             ("basmati rice", .consumable), ("onion", .consumable), ("tomato", .consumable),
             ("curd", .consumable), ("ginger garlic paste", .consumable),
             ("carrot", .consumable), ("peas", .consumable), ("potato", .consumable),
@@ -195,7 +201,9 @@ enum SampleData {
             ("salt", .staple), ("oil", .staple), ("water", .staple),
             ("pot", .equipment)
         ]),
-        DemoRecipe(title: "Paneer Tikka", emoji: "🧆", ingredients: [
+        DemoRecipe(title: "Paneer Tikka", emoji: "🧆",
+                   description: "Cubes of paneer marinated in spiced yogurt with peppers and onions, then charred on a tava for a smoky finish. A crowd-favourite vegetarian starter with a squeeze of lemon.",
+                   ingredients: [
             ("paneer", .consumable), ("curd", .consumable), ("capsicum", .consumable),
             ("onion", .consumable), ("ginger garlic paste", .consumable),
             ("lemon", .consumable), ("garam masala", .consumable),

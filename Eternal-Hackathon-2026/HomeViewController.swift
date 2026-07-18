@@ -16,6 +16,10 @@ final class HomeViewController: UIViewController {
     /// Safari via the Share Extension can be dropped in here.
     private let linkField = UITextField()
 
+    /// Inline recipe preview shown above the demo chips when one is tapped.
+    private let recipeCard = UIView()
+    private let recipeContentStack = UIStackView()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Theme.Color.background
@@ -46,19 +50,28 @@ final class HomeViewController: UIViewController {
     }
 
     @objc private func keyboardWillChange(_ note: Notification) {
-        guard let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        guard let frameValue = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue
         else { return }
 
-        // Inset the scroll view by the part of the keyboard that overlaps it,
-        // then scroll the link field into the now-smaller visible area.
-        let overlap = view.bounds.height - view.convert(frame, from: nil).minY
+        // Keyboard's top edge, in this view's coordinate space.
+        let keyboardFrame = view.convert(frameValue.cgRectValue, from: view.window)
+        let keyboardTop = keyboardFrame.minY
+
+        // Grow the scrollable area so it can scroll past the keyboard.
+        let overlap = max(0, view.bounds.height - keyboardTop)
         let inset = max(0, overlap - view.safeAreaInsets.bottom)
         scrollView.contentInset.bottom = inset
         scrollView.verticalScrollIndicatorInsets.bottom = inset
 
-        if linkField.isFirstResponder {
-            let target = linkField.convert(linkField.bounds, to: scrollView).insetBy(dx: 0, dy: -24)
-            scrollView.scrollRectToVisible(target, animated: true)
+        // Scroll up by exactly the amount the field's bottom is hidden behind
+        // the keyboard (plus a little breathing room).
+        guard linkField.isFirstResponder else { return }
+        let fieldMaxY = linkField.convert(linkField.bounds, to: view).maxY
+        let hiddenBy = fieldMaxY + 20 - keyboardTop
+        if hiddenBy > 0 {
+            var offset = scrollView.contentOffset
+            offset.y += hiddenBy
+            scrollView.setContentOffset(offset, animated: true)
         }
     }
 
@@ -333,7 +346,20 @@ final class HomeViewController: UIViewController {
             chipRow.addArrangedSubview(chip)
         }
 
-        let stack = UIStackView(arrangedSubviews: [header, chipRow])
+        // Recipe preview card sits above the chips; hidden until one is tapped.
+        recipeContentStack.axis = .vertical
+        recipeContentStack.spacing = 10
+        recipeContentStack.translatesAutoresizingMaskIntoConstraints = false
+
+        recipeCard.backgroundColor = Theme.Color.surface
+        recipeCard.layer.cornerRadius = Theme.Metric.cardRadius
+        recipeCard.layer.borderWidth = 1
+        recipeCard.layer.borderColor = Theme.Color.green.withAlphaComponent(0.4).cgColor
+        recipeCard.isHidden = true
+        recipeCard.addSubview(recipeContentStack)
+        recipeContentStack.pin(to: recipeCard, insets: .init(top: 16, left: 16, bottom: 16, right: 16))
+
+        let stack = UIStackView(arrangedSubviews: [header, recipeCard, chipRow])
         stack.axis = .vertical
         stack.spacing = 12
         return stack
@@ -438,18 +464,70 @@ final class HomeViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    /// Demo chip → straight to the ingredient list with that recipe's
-    /// hardcoded ingredients.
+    /// Demo chip → reveal that recipe's ingredients inline, above the chips.
     @objc private func demoRecipeTapped(_ sender: UITapGestureRecognizer) {
         guard let index = sender.view?.tag,
               SampleData.demoRecipes.indices.contains(index) else { return }
-        let items = SampleData.demoRecipes[index].ingredients.map {
-            ExtractedItem(name: $0.name, category: $0.category,
-                          estimatedQuantity: nil, unit: nil,
-                          evidence: [], confidence: 1)
+        showRecipeDetail(SampleData.demoRecipes[index])
+    }
+
+    /// Rebuilds and reveals the inline recipe preview card.
+    private func showRecipeDetail(_ recipe: DemoRecipe) {
+        recipeContentStack.arrangedSubviews.forEach {
+            recipeContentStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
         }
-        let vc = ReviewEditViewController(items: items)
-        navigationController?.pushViewController(vc, animated: true)
+
+        // Header: emoji thumb + title + close button.
+        let thumb = ThumbnailView(emoji: recipe.emoji, size: 36, corner: 10)
+        thumb.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            thumb.widthAnchor.constraint(equalToConstant: 36),
+            thumb.heightAnchor.constraint(equalToConstant: 36)
+        ])
+        let title = Make.label(recipe.title, font: Theme.Font.headline(), color: Theme.Color.textPrimary)
+
+        let close = UIButton(type: .system)
+        close.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        close.tintColor = Theme.Color.textTertiary
+        close.setContentHuggingPriority(.required, for: .horizontal)
+        close.addTarget(self, action: #selector(closeRecipeDetail), for: .touchUpInside)
+
+        let headerRow = UIStackView(arrangedSubviews: [thumb, title, UIView(), close])
+        headerRow.spacing = 10
+        headerRow.alignment = .center
+        recipeContentStack.addArrangedSubview(headerRow)
+
+        // Proper recipe description.
+        let desc = Make.label(recipe.description, font: Theme.Font.body(),
+                              color: Theme.Color.textSecondary, lines: 0)
+        recipeContentStack.addArrangedSubview(desc)
+        recipeContentStack.setCustomSpacing(14, after: desc)
+
+        let caption = Make.label("What you'll need · \(recipe.ingredients.count) ingredients",
+                                 font: Theme.Font.captionBold(), color: Theme.Color.textPrimary)
+        recipeContentStack.addArrangedSubview(caption)
+
+        // One row per ingredient: emoji + name.
+        for ingredient in recipe.ingredients {
+            let emoji = IngredientIcon.emoji(for: ingredient.name, category: ingredient.category)
+            let icon = Make.label(emoji, font: .systemFont(ofSize: 18), color: Theme.Color.textPrimary)
+            icon.setContentHuggingPriority(.required, for: .horizontal)
+            let name = Make.label(ingredient.name.capitalized,
+                                  font: Theme.Font.body(), color: Theme.Color.textPrimary)
+            let row = UIStackView(arrangedSubviews: [icon, name])
+            row.spacing = 10
+            row.alignment = .center
+            recipeContentStack.addArrangedSubview(row)
+        }
+
+        recipeCard.isHidden = false
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    @objc private func closeRecipeDetail() {
+        recipeCard.isHidden = true
+        UIView.animate(withDuration: 0.2) { self.view.layoutIfNeeded() }
     }
 
     @objc private func helpTapped() {
