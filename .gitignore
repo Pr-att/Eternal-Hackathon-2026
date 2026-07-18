@@ -5,3 +5,4 @@ DerivedData/
 backend/.venv/
 __pycache__/
 backend/apple_extract
+backend/fixtures/

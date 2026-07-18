@@ -30,6 +30,9 @@ BIN = Path(__file__).with_name("apple_extract")
 
 
 def _binary():
+    # mtime can't see toolchain/OS switches — after changing Xcode or macOS,
+    # `rm backend/apple_extract` by hand. DEVELOPER_DIR=<Xcode-beta> builds
+    # against the 27 SDK (image path in); default 26.6 compiles the gate out.
     if not BIN.exists() or BIN.stat().st_mtime < max(s.stat().st_mtime for s in SOURCES):
         subprocess.run(
             ["swiftc", "-O", "-parse-as-library", *map(str, SOURCES), "-o", str(BIN)],

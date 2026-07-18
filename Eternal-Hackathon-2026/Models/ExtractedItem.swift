@@ -15,7 +15,7 @@ enum ItemCategory: String, Codable {
 // are the block headers in the prompt, e.g. [OCR].
 @Generable
 enum EvidenceSource: String, Codable {
-    case title, description, transcript, text, ocr, vision
+    case title, description, transcript, text, ocr, vision, frames
 }
 
 @Generable
