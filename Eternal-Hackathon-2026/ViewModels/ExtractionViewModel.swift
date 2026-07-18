@@ -73,6 +73,11 @@ final class ExtractionViewModel {
             guard let self else { return }
             Task { @MainActor in self.progress = 0.15 + 0.45 * fraction }
         }
+        // extraction (frame walk + per-batch model calls) spans 60%→100%
+        let extractSlice: @Sendable (Double) -> Void = { [weak self] fraction in
+            guard let self else { return }
+            Task { @MainActor in self.progress = 0.6 + 0.4 * fraction }
+        }
         do {
             if let page = try? await Self.ingest(url: link) {
                 progress = 0.15
@@ -80,11 +85,12 @@ final class ExtractionViewModel {
                 if let videoUrl = page.videoUrl {
                     videoPath = await Self.download(videoUrl, onProgress: downloadSlice)
                 }
-                progress = 0.6                // frame walk + model (unmeasurable)
+                progress = 0.6
                 defer { videoPath.map { try? FileManager.default.removeItem(atPath: $0) } }
                 items = try await extractor.extract(
                     title: page.title, description: page.description,
-                    transcript: page.transcriptText, videoPath: videoPath).items
+                    transcript: page.transcriptText, videoPath: videoPath,
+                    onProgress: extractSlice).items
             } else {
                 // backend down or not a supported page — treat as a direct video URL
                 guard let videoPath = await Self.download(link, onProgress: downloadSlice) else {
@@ -92,7 +98,8 @@ final class ExtractionViewModel {
                 }
                 progress = 0.6
                 defer { try? FileManager.default.removeItem(atPath: videoPath) }
-                items = try await extractor.extract(videoPath: videoPath).items
+                items = try await extractor.extract(videoPath: videoPath,
+                                                    onProgress: extractSlice).items
             }
         } catch {
             errorMessage = error.localizedDescription
