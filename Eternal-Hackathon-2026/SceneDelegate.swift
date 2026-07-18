@@ -23,7 +23,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // presented programmatically inside a nav controller with the bar hidden
         // in favour of the custom in-screen headers. This replaces the old
         // storyboard `ViewController` test harness.
-        let nav = UINavigationController(rootViewController: HomeViewController())
+        let args = ProcessInfo.processInfo.arguments
+        let root: UIViewController = args.contains("-showSummary") ? SummaryOrderViewController()
+            : args.contains("-showReview") ? ReviewEditViewController() : HomeViewController()
+        let nav = UINavigationController(rootViewController: root)
         nav.navigationBar.isHidden = true
         nav.view.backgroundColor = Theme.Color.background
 

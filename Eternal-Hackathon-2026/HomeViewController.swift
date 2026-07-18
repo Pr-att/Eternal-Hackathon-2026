@@ -21,6 +21,12 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = Theme.Color.background
         buildLayout()
 
+        // Tap anywhere outside the keyboard to dismiss it. cancelsTouchesInView
+        // is false so taps still reach the demo chips and buttons underneath.
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        dismissTap.cancelsTouchesInView = false
+        view.addGestureRecognizer(dismissTap)
+
         // A Safari link shared via the Share Extension lands right here on the
         // home screen. Observe the "content arrived" signal for warm opens, and
         // sweep anything already queued for cold starts (the notification may
@@ -150,41 +156,89 @@ final class HomeViewController: UIViewController {
     /// Hero *image* (per requirement: use an image, not a video player).
     private func makeHeroImage() -> UIView {
         let container = UIView()
-        container.backgroundColor = Theme.Color.surface
         container.layer.cornerRadius = Theme.Metric.cardRadius
         container.clipsToBounds = true
         container.translatesAutoresizingMaskIntoConstraints = false
 
-        // Gradient backdrop to imply a rich hero photo.
-        let bg = GradientView(colors: [UIColor(hex: 0x1B1140), UIColor(hex: 0x0E1030)])
+        // Warm, appetizing sunset gradient — far more inviting than the old
+        // near-black backdrop.
+        let bg = GradientView(colors: [UIColor(hex: 0xFF6A3D),
+                                       UIColor(hex: 0xFF3D77),
+                                       UIColor(hex: 0x7A2BE2)],
+                              start: CGPoint(x: 0, y: 0),
+                              end: CGPoint(x: 1, y: 1))
         container.addSubview(bg)
         bg.pin(to: container)
 
-        // Static "AI Recipe" image using SF Symbol + food emojis (no play control).
-        let imageView = UIImageView(image: UIImage(systemName: "photo.on.rectangle.angled"))
-        imageView.tintColor = UIColor.white.withAlphaComponent(0.15)
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
+        // Soft glow circle behind the hero dish to add depth.
+        let glow = UIView()
+        glow.backgroundColor = UIColor.white.withAlphaComponent(0.16)
+        glow.translatesAutoresizingMaskIntoConstraints = false
+        glow.layer.cornerRadius = 52
+        container.addSubview(glow)
 
-        let emojis = Make.label("🍲  🥕  🍅  🧅  🌿",
-                                font: .systemFont(ofSize: 34),
+        // Big central "dish" emoji as the focal point.
+        let dish = Make.label("🍳", font: .systemFont(ofSize: 58), color: .white, align: .center)
+        dish.translatesAutoresizingMaskIntoConstraints = false
+
+        // "AI-Powered" badge pill floating at the top-left.
+        let badge = makeHeroBadge()
+
+        // Ingredient emoji strip along the bottom.
+        let emojis = Make.label("🍅  🥕  🧅  🌿  🌶️  🧄",
+                                font: .systemFont(ofSize: 24),
                                 color: .white, align: .center)
+        emojis.translatesAutoresizingMaskIntoConstraints = false
 
-        let stack = UIStackView(arrangedSubviews: [imageView, emojis])
-        stack.axis = .vertical
-        stack.spacing = 14
-        stack.alignment = .center
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(stack)
+        container.addSubview(dish)
+        container.addSubview(badge)
+        container.addSubview(emojis)
 
         NSLayoutConstraint.activate([
             container.heightAnchor.constraint(equalToConstant: 190),
-            imageView.heightAnchor.constraint(equalToConstant: 60),
-            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+
+            glow.widthAnchor.constraint(equalToConstant: 104),
+            glow.heightAnchor.constraint(equalToConstant: 104),
+            glow.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            glow.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -12),
+
+            dish.centerXAnchor.constraint(equalTo: glow.centerXAnchor),
+            dish.centerYAnchor.constraint(equalTo: glow.centerYAnchor),
+
+            badge.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
+            badge.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
+
+            emojis.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            emojis.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            emojis.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16)
         ])
 
         return container
+    }
+
+    /// Small frosted "AI-Powered" pill used on the hero.
+    private func makeHeroBadge() -> UIView {
+        let pill = UIView()
+        pill.backgroundColor = UIColor.white.withAlphaComponent(0.22)
+        pill.layer.cornerRadius = 13
+        pill.translatesAutoresizingMaskIntoConstraints = false
+
+        let icon = UIImageView(image: UIImage(systemName: "sparkles"))
+        icon.tintColor = .white
+        icon.contentMode = .scaleAspectFit
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.widthAnchor.constraint(equalToConstant: 14).isActive = true
+
+        let text = Make.label("AI-Powered", font: Theme.Font.captionBold(), color: .white)
+
+        let row = UIStackView(arrangedSubviews: [icon, text])
+        row.spacing = 5
+        row.alignment = .center
+        row.isLayoutMarginsRelativeArrangement = true
+        row.layoutMargins = .init(top: 6, left: 10, bottom: 6, right: 12)
+        pill.addSubview(row)
+        row.pin(to: pill)
+        return pill
     }
 
     private func makeInputCard() -> UIView {
@@ -212,9 +266,10 @@ final class HomeViewController: UIViewController {
         field.tintColor = Theme.Color.green
 
         let copy = UIButton(type: .system)
-        copy.setImage(UIImage(systemName: "doc.on.doc"), for: .normal)
-        copy.tintColor = Theme.Color.textSecondary
+        copy.setImage(UIImage(systemName: "doc.on.clipboard"), for: .normal)
+        copy.tintColor = Theme.Color.green
         copy.setContentHuggingPriority(.required, for: .horizontal)
+        copy.addTarget(self, action: #selector(pasteTapped), for: .touchUpInside)
 
         let fieldRow = UIStackView(arrangedSubviews: [linkIcon, field, copy])
         fieldRow.spacing = 10
@@ -335,6 +390,41 @@ final class HomeViewController: UIViewController {
     }
 
     // MARK: Actions
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    /// Pastes the copied link from the system clipboard into the link field.
+    @objc private func pasteTapped() {
+        let pb = UIPasteboard.general
+        let pasted = (pb.url?.absoluteString ?? pb.string ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !pasted.isEmpty else {
+            let alert = UIAlertController(title: "Nothing to paste",
+                                          message: "Copy a video link first, then tap paste.",
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        linkField.text = pasted
+        // Brief highlight so it's clear the link landed in the field.
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        flashLinkField()
+    }
+
+    private func flashLinkField() {
+        guard let row = linkField.superview else { return }
+        let original = row.backgroundColor
+        UIView.animate(withDuration: 0.15, animations: {
+            row.backgroundColor = Theme.Color.green.withAlphaComponent(0.18)
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.35) { row.backgroundColor = original }
+        })
+    }
 
     @objc private func analyzeTapped() {
         let vc = ProcessingViewController()

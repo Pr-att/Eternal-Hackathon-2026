@@ -14,12 +14,21 @@ final class GroceryItemCell: UITableViewCell {
     static let reuseID = "GroceryItemCell"
 
     private let container = UIView()
-    private let handle = UIImageView(image: UIImage(systemName: "ellipsis"))
     private let thumb = ThumbnailView(emoji: "🍅", size: 40)
     private let nameLabel = Make.label("", font: Theme.Font.bodyMedium(), color: Theme.Color.textPrimary)
-    private let deleteButton = UIButton(type: .system)
 
-    var onDelete: (() -> Void)?
+    // Quantity stepper: [−] qty [+]
+    private let stepper = UIView()
+    private let minusButton = UIButton(type: .system)
+    private let plusButton = UIButton(type: .system)
+    private let qtyLabel = Make.label("1", font: Theme.Font.bodyMedium(), color: Theme.Color.textPrimary, align: .center)
+
+    private var quantity = 1
+
+    /// Fired when the quantity changes; passes the new value (always ≥ 1).
+    var onQuantityChange: ((Int) -> Void)?
+    /// Fired when "−" is tapped at quantity 1 — i.e. the user removes the item.
+    var onRemove: (() -> Void)?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -37,19 +46,11 @@ final class GroceryItemCell: UITableViewCell {
         container.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(container)
 
-        handle.tintColor = Theme.Color.textTertiary
-        handle.contentMode = .center
-        handle.transform = CGAffineTransform(rotationAngle: .pi / 2) // vertical dots
-        handle.translatesAutoresizingMaskIntoConstraints = false
-
         thumb.translatesAutoresizingMaskIntoConstraints = false
 
-        deleteButton.setImage(UIImage(systemName: "trash"), for: .normal)
-        deleteButton.tintColor = Theme.Color.danger
-        deleteButton.translatesAutoresizingMaskIntoConstraints = false
-        deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
+        buildStepper()
 
-        let stack = UIStackView(arrangedSubviews: [handle, thumb, nameLabel, UIView(), deleteButton])
+        let stack = UIStackView(arrangedSubviews: [thumb, nameLabel, UIView(), stepper])
         stack.spacing = 12
         stack.alignment = .center
         stack.isLayoutMarginsRelativeArrangement = true
@@ -64,19 +65,64 @@ final class GroceryItemCell: UITableViewCell {
             container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
-            handle.widthAnchor.constraint(equalToConstant: 16),
             thumb.widthAnchor.constraint(equalToConstant: 40),
-            thumb.heightAnchor.constraint(equalToConstant: 40),
-            deleteButton.widthAnchor.constraint(equalToConstant: 24)
+            thumb.heightAnchor.constraint(equalToConstant: 40)
+        ])
+    }
+
+    private func buildStepper() {
+        for button in [minusButton, plusButton] {
+            button.tintColor = Theme.Color.green   // match the "Ingredients" accent
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        }
+        minusButton.setImage(UIImage(systemName: "minus"), for: .normal)
+        plusButton.setImage(UIImage(systemName: "plus"), for: .normal)
+        minusButton.addTarget(self, action: #selector(minusTapped), for: .touchUpInside)
+        plusButton.addTarget(self, action: #selector(plusTapped), for: .touchUpInside)
+
+        qtyLabel.textColor = Theme.Color.green
+        qtyLabel.setContentHuggingPriority(.required, for: .horizontal)
+        qtyLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 20).isActive = true
+
+        let row = UIStackView(arrangedSubviews: [minusButton, qtyLabel, plusButton])
+        row.spacing = 2
+        row.alignment = .center
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        stepper.backgroundColor = Theme.Color.greenSoftFill
+        stepper.layer.cornerRadius = 10
+        stepper.layer.borderWidth = 1
+        stepper.layer.borderColor = Theme.Color.green.withAlphaComponent(0.5).cgColor
+        stepper.translatesAutoresizingMaskIntoConstraints = false
+        stepper.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.topAnchor.constraint(equalTo: stepper.topAnchor, constant: 4),
+            row.bottomAnchor.constraint(equalTo: stepper.bottomAnchor, constant: -4),
+            row.leadingAnchor.constraint(equalTo: stepper.leadingAnchor, constant: 4),
+            row.trailingAnchor.constraint(equalTo: stepper.trailingAnchor, constant: -4)
         ])
     }
 
     func configure(with item: GroceryItem) {
         nameLabel.text = item.name
         thumb.setEmoji(item.emoji)
+        quantity = max(1, item.quantity)
+        qtyLabel.text = "\(quantity)"
     }
 
-    @objc private func deleteTapped() { onDelete?() }
+    @objc private func minusTapped() {
+        guard quantity > 1 else { onRemove?(); return }
+        quantity -= 1
+        qtyLabel.text = "\(quantity)"
+        onQuantityChange?(quantity)
+    }
+
+    @objc private func plusTapped() {
+        quantity += 1
+        qtyLabel.text = "\(quantity)"
+        onQuantityChange?(quantity)
+    }
 }
 
 // MARK: - View controller
@@ -87,7 +133,7 @@ final class ReviewEditViewController: UIViewController {
         case toBuy, equipment, staples
         var title: String {
             switch self {
-            case .toBuy:     return "To Buy"
+            case .toBuy:     return "Ingredients"
             case .equipment: return "Equipment"
             case .staples:   return "Staples"
             }
@@ -167,18 +213,8 @@ final class ReviewEditViewController: UIViewController {
     private func makeHeader() -> UIView {
         let back = Make.backButton(target: self, action: #selector(backTapped))
 
-        let stepBadge = Make.label("3", font: Theme.Font.captionBold(), color: .black, align: .center)
-        stepBadge.backgroundColor = Theme.Color.gradientEnd
-        stepBadge.layer.cornerRadius = 11
-        stepBadge.layer.masksToBounds = true
-        stepBadge.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stepBadge.widthAnchor.constraint(equalToConstant: 22),
-            stepBadge.heightAnchor.constraint(equalToConstant: 22)
-        ])
-
         let title = Make.label("Review & Edit", font: Theme.Font.title(), color: Theme.Color.textPrimary, lines: 1)
-        let titleRow = UIStackView(arrangedSubviews: [stepBadge, title])
+        let titleRow = UIStackView(arrangedSubviews: [title])
         titleRow.spacing = 8
         titleRow.alignment = .center
 
@@ -319,6 +355,20 @@ final class ReviewEditViewController: UIViewController {
         }
     }
 
+    /// Removes an item and refreshes every count that depends on it. Reloading
+    /// the whole section (rather than just `deleteRows`) is what fixes the stale
+    /// number in the section-header badge — `deleteRows` never rebuilds the
+    /// header, so its count used to lag behind the tab-bar count.
+    private func removeItem(at row: Int) {
+        var items = currentItems
+        guard row < items.count else { return }
+        items.remove(at: row)
+        setItems(items)
+        refreshCounts()
+        rebuildTabTitles()
+        tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
+    }
+
     // MARK: Actions
 
     @objc private func backTapped() { navigationController?.popViewController(animated: true) }
@@ -331,13 +381,38 @@ final class ReviewEditViewController: UIViewController {
     }
 
     @objc private func continueTapped() {
-        let vc = SummaryOrderViewController()
+        let vc = SummaryOrderViewController(
+            consumables: consumables,
+            equipment: equipment,
+            staples: staples.map { $0.name })
         navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func addMoreTapped() {
+        let alert = UIAlertController(title: "Add item",
+                                     message: "Type an item name — we'll pick a matching icon.",
+                                     preferredStyle: .alert)
+        alert.addTextField { field in
+            field.placeholder = "e.g. Paneer, Tomato, Rice"
+            field.autocapitalizationType = .words
+            field.returnKeyType = .done
+            field.clearButtonMode = .whileEditing
+        }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Add", style: .default) { [weak self, weak alert] _ in
+            guard let self else { return }
+            let name = (alert?.textFields?.first?.text ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { return }
+            self.appendItem(named: name)
+        })
+        present(alert, animated: true)
+    }
+
+    /// Appends a freshly-typed item to the active tab, auto-picking an emoji icon.
+    private func appendItem(named name: String) {
         var items = currentItems
-        items.append(GroceryItem(name: "New item", emoji: "➕"))
+        items.append(GroceryItem(name: name, emoji: GroceryEmoji.guess(for: name)))
         setItems(items)
         refreshCounts()
         rebuildTabTitles()
@@ -369,14 +444,15 @@ extension ReviewEditViewController: UITableViewDataSource, UITableViewDelegate {
         let cell = tableView.dequeueReusableCell(withIdentifier: GroceryItemCell.reuseID, for: indexPath) as! GroceryItemCell
         let item = currentItems[indexPath.row]
         cell.configure(with: item)
-        cell.onDelete = { [weak self] in
-            guard let self, let idx = self.tableView.indexPath(for: cell) else { return }
+        cell.onQuantityChange = { [weak self, weak cell] qty in
+            guard let self, let cell, let idx = self.tableView.indexPath(for: cell) else { return }
             var items = self.currentItems
-            items.remove(at: idx.row)
+            items[idx.row].quantity = qty
             self.setItems(items)
-            self.tableView.deleteRows(at: [idx], with: .automatic)
-            self.refreshCounts()
-            self.rebuildTabTitles()
+        }
+        cell.onRemove = { [weak self, weak cell] in
+            guard let self, let cell, let idx = self.tableView.indexPath(for: cell) else { return }
+            self.removeItem(at: idx.row)
         }
         return cell
     }
@@ -387,7 +463,7 @@ extension ReviewEditViewController: UITableViewDataSource, UITableViewDelegate {
 
         let titleText: String
         switch selectedTab {
-        case .toBuy:     titleText = "TO BUY (CONSUMABLES)"
+        case .toBuy:     titleText = "INGREDIENTS"
         case .equipment: titleText = "EQUIPMENT"
         case .staples:   titleText = "STAPLES"
         }
@@ -445,13 +521,8 @@ extension ReviewEditViewController: UITableViewDataSource, UITableViewDelegate {
     // Swipe to delete
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let delete = UIContextualAction(style: .destructive, title: nil) { [weak self] _, _, done in
-            guard let self else { return }
-            var items = self.currentItems
-            items.remove(at: indexPath.row)
-            self.setItems(items)
-            tableView.deleteRows(at: [indexPath], with: .automatic)
-            self.refreshCounts()
-            self.rebuildTabTitles()
+            guard let self else { done(false); return }
+            self.removeItem(at: indexPath.row)
             done(true)
         }
         delete.image = UIImage(systemName: "trash")

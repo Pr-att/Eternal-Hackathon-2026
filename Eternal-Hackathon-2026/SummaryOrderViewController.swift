@@ -15,6 +15,8 @@ final class SummaryGridCell: UICollectionViewCell {
     private let thumb = ThumbnailView(emoji: "🍅", size: 44, corner: 14)
     private let nameLabel = Make.label("", font: Theme.Font.caption(),
                                        color: Theme.Color.textSecondary, align: .center, lines: 2)
+    // "×N" pill shown on the thumbnail when the user picked more than one.
+    private let qtyBadge = Make.label("", font: Theme.Font.captionBold(), color: .black, align: .center)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -25,13 +27,25 @@ final class SummaryGridCell: UICollectionViewCell {
         stack.alignment = .center
         stack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(stack)
+
+        qtyBadge.backgroundColor = Theme.Color.green
+        qtyBadge.layer.cornerRadius = 9
+        qtyBadge.layer.masksToBounds = true
+        qtyBadge.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(qtyBadge)
+
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: contentView.topAnchor),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             stack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
             thumb.widthAnchor.constraint(equalToConstant: 56),
-            thumb.heightAnchor.constraint(equalToConstant: 56)
+            thumb.heightAnchor.constraint(equalToConstant: 56),
+
+            qtyBadge.centerXAnchor.constraint(equalTo: thumb.trailingAnchor, constant: -3),
+            qtyBadge.centerYAnchor.constraint(equalTo: thumb.topAnchor, constant: 3),
+            qtyBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 18),
+            qtyBadge.heightAnchor.constraint(equalToConstant: 18)
         ])
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -39,6 +53,8 @@ final class SummaryGridCell: UICollectionViewCell {
     func configure(with item: GroceryItem) {
         thumb.setEmoji(item.emoji)
         nameLabel.text = item.name
+        qtyBadge.text = "  ×\(item.quantity)  "
+        qtyBadge.isHidden = item.quantity <= 1
     }
 }
 
@@ -87,7 +103,10 @@ final class SummaryHeaderView: UICollectionReusableView {
         row.alignment = .center
         row.translatesAutoresizingMaskIntoConstraints = false
         addSubview(row)
-        row.pin(to: self)
+        // Pad the heading away from the card's top edge (and sides) directly in
+        // the view so the spacing is independent of the compositional layout's
+        // supplementary-item content insets.
+        row.pin(to: self, insets: .init(top: 22, left: 18, bottom: 14, right: 18))
     }
 }
 
@@ -111,11 +130,23 @@ final class SummaryOrderViewController: UIViewController {
 
     private enum Section: Int, CaseIterable { case toBuy, equipment, staples }
 
-    private let consumables = SampleData.consumables
-    private let equipment   = SampleData.equipment
-    private let staples     = SampleData.staples
+    // Injected from the Review & Edit screen so this screen reflects the user's
+    // actual edits (removed items, changed quantities) — not static sample data.
+    private let consumables: [GroceryItem]
+    private let equipment: [GroceryItem]
+    private let staples: [String]
 
     private var collectionView: UICollectionView!
+
+    init(consumables: [GroceryItem] = SampleData.consumables,
+         equipment: [GroceryItem] = SampleData.equipment,
+         staples: [String] = SampleData.staples) {
+        self.consumables = consumables
+        self.equipment = equipment
+        self.staples = staples
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -163,18 +194,8 @@ final class SummaryOrderViewController: UIViewController {
     private func makeHeader() -> UIView {
         let back = Make.backButton(target: self, action: #selector(backTapped))
 
-        let stepBadge = Make.label("4", font: Theme.Font.captionBold(), color: .black, align: .center)
-        stepBadge.backgroundColor = Theme.Color.gradientEnd
-        stepBadge.layer.cornerRadius = 11
-        stepBadge.layer.masksToBounds = true
-        stepBadge.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stepBadge.widthAnchor.constraint(equalToConstant: 22),
-            stepBadge.heightAnchor.constraint(equalToConstant: 22)
-        ])
-
         let title = Make.label("Summary & Order", font: Theme.Font.title(), color: Theme.Color.textPrimary, lines: 1)
-        let titleRow = UIStackView(arrangedSubviews: [stepBadge, title])
+        let titleRow = UIStackView(arrangedSubviews: [title])
         titleRow.spacing = 8
         titleRow.alignment = .center
 
@@ -279,6 +300,7 @@ final class SummaryOrderViewController: UIViewController {
 
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = .init(top: 12, leading: 12, bottom: 16, trailing: 12)
+        section.supplementariesFollowContentInsets = false
         section.boundarySupplementaryItems = [makeHeaderItem()]
         section.decorationItems = [makeDecoration()]
         return section
@@ -294,6 +316,7 @@ final class SummaryOrderViewController: UIViewController {
             subitems: [item])
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = .init(top: 14, leading: 18, bottom: 18, trailing: 18)
+        section.supplementariesFollowContentInsets = false
         section.boundarySupplementaryItems = [makeHeaderItem()]
         section.decorationItems = [makeDecoration()]
         return section
@@ -301,10 +324,12 @@ final class SummaryOrderViewController: UIViewController {
 
     private func makeHeaderItem() -> NSCollectionLayoutBoundarySupplementaryItem {
         let header = NSCollectionLayoutBoundarySupplementaryItem(
-            layoutSize: .init(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(30)),
+            layoutSize: .init(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(74)),
             elementKind: UICollectionView.elementKindSectionHeader,
             alignment: .top)
-        header.contentInsets = .init(top: 8, leading: 18, bottom: 0, trailing: 18)
+        // Padding is baked into SummaryHeaderView itself (see configure), so the
+        // layout item carries no additional content insets.
+        header.contentInsets = .zero
         return header
     }
 

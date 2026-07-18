@@ -11,6 +11,58 @@ struct GroceryItem {
     let name: String
     let emoji: String          // stand-in for a product thumbnail image
     var isSelected: Bool = true
+    var quantity: Int = 1      // adjustable via the "− qty +" stepper
+}
+
+/// Picks a sensible stand-in emoji "thumbnail" for a freely-typed item name.
+/// Matching is case-insensitive and looks for keywords anywhere in the name, so
+/// "2 Ripe Tomatoes" still resolves to 🍅.
+enum GroceryEmoji {
+
+    /// Keyword → emoji. Ordered roughly specific-before-generic; the first
+    /// keyword found in the name wins.
+    private static let map: [(keyword: String, emoji: String)] = [
+        // Proteins
+        ("chicken", "🍗"), ("mutton", "🍖"), ("lamb", "🍖"), ("beef", "🥩"),
+        ("pork", "🥓"), ("bacon", "🥓"), ("fish", "🐟"), ("prawn", "🦐"),
+        ("shrimp", "🦐"), ("crab", "🦀"), ("egg", "🥚"), ("paneer", "🧀"),
+        ("cheese", "🧀"), ("tofu", "🍥"),
+        // Vegetables
+        ("onion", "🧅"), ("tomato", "🍅"), ("potato", "🥔"), ("carrot", "🥕"),
+        ("chilli", "🌶️"), ("chili", "🌶️"), ("pepper", "🫑"), ("capsicum", "🫑"),
+        ("garlic", "🧄"), ("ginger", "🫚"), ("corn", "🌽"), ("mushroom", "🍄"),
+        ("broccoli", "🥦"), ("cucumber", "🥒"), ("eggplant", "🍆"),
+        ("brinjal", "🍆"), ("spinach", "🥬"), ("lettuce", "🥬"), ("cabbage", "🥬"),
+        ("peas", "🫛"), ("bean", "🫘"), ("coriander", "🌿"), ("cilantro", "🌿"),
+        ("mint", "🌿"), ("curry leaf", "🌿"), ("leaves", "🌿"),
+        // Fruits
+        ("apple", "🍎"), ("banana", "🍌"), ("mango", "🥭"), ("lemon", "🍋"),
+        ("lime", "🍋"), ("orange", "🍊"), ("grape", "🍇"), ("strawberr", "🍓"),
+        ("pineapple", "🍍"), ("coconut", "🥥"), ("avocado", "🥑"),
+        // Grains / staples
+        ("rice", "🍚"), ("wheat", "🌾"), ("flour", "🌾"), ("atta", "🌾"),
+        ("bread", "🍞"), ("pasta", "🍝"), ("noodle", "🍜"), ("oats", "🥣"),
+        // Dairy
+        ("milk", "🥛"), ("curd", "🥣"), ("yogurt", "🥣"), ("yoghurt", "🥣"),
+        ("butter", "🧈"), ("cream", "🍦"), ("ghee", "🧈"),
+        // Pantry / condiments
+        ("salt", "🧂"), ("sugar", "🍬"), ("honey", "🍯"), ("oil", "🫗"),
+        ("water", "💧"), ("masala", "🌶️"), ("spice", "🌶️"), ("turmeric", "🟡"),
+        ("sauce", "🥫"), ("ketchup", "🥫"), ("vinegar", "🧴"), ("tea", "🍵"),
+        ("coffee", "☕"), ("chocolate", "🍫"), ("nut", "🥜"),
+        // Equipment
+        ("cooker", "🍲"), ("grinder", "🌀"), ("mixer", "🌀"), ("blender", "🌀"),
+        ("pan", "🍳"), ("tawa", "🍳"), ("pot", "🍲"), ("knife", "🔪"),
+        ("spoon", "🥄"), ("bowl", "🥣"), ("plate", "🍽️"), ("oven", "🔥")
+    ]
+
+    static func guess(for name: String) -> String {
+        let lower = name.lowercased()
+        for entry in map where lower.contains(entry.keyword) {
+            return entry.emoji
+        }
+        return "🛒"   // generic grocery fallback
+    }
 }
 
 /// The demo recipe chips on the home screen.
