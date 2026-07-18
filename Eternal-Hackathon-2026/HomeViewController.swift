@@ -64,7 +64,7 @@ final class HomeViewController: UIViewController {
         ])
 
         content.addArrangedSubview(makeTopBar())
-        content.setCustomSpacing(24, after: content.arrangedSubviews.last!)
+        content.setCustomSpacing(8, after: content.arrangedSubviews.last!)
         content.addArrangedSubview(makeTitleBlock())
         content.addArrangedSubview(makeHeroImage())
         content.addArrangedSubview(makeInputCard())
@@ -79,45 +79,17 @@ final class HomeViewController: UIViewController {
     private func makeTopBar() -> UIView {
         let bar = UIView()
 
-        let chip = UIView()
-        chip.backgroundColor = Theme.Color.surface
-        chip.layer.cornerRadius = 14
-        chip.layer.borderWidth = 1
-        chip.layer.borderColor = Theme.Color.stroke.cgColor
-        chip.translatesAutoresizingMaskIntoConstraints = false
-
-        let num = Make.label("1", font: Theme.Font.captionBold(), color: .black, align: .center)
-        num.backgroundColor = Theme.Color.gradientEnd
-        num.layer.cornerRadius = 10
-        num.layer.masksToBounds = true
-        NSLayoutConstraint.activate([
-            num.widthAnchor.constraint(equalToConstant: 20),
-            num.heightAnchor.constraint(equalToConstant: 20)
-        ])
-        let step = Make.label("Paste Video URL", font: Theme.Font.bodyMedium(), color: Theme.Color.textPrimary, lines: 1)
-
-        let chipStack = UIStackView(arrangedSubviews: [num, step])
-        chipStack.spacing = 8
-        chipStack.alignment = .center
-        chipStack.isLayoutMarginsRelativeArrangement = true
-        chipStack.layoutMargins = .init(top: 7, left: 10, bottom: 7, right: 14)
-        chipStack.translatesAutoresizingMaskIntoConstraints = false
-        chip.addSubview(chipStack)
-        chipStack.pin(to: chip)
-
         let help = UIButton(type: .system)
         help.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
         help.tintColor = Theme.Color.textSecondary
         help.translatesAutoresizingMaskIntoConstraints = false
+        help.addTarget(self, action: #selector(helpTapped), for: .touchUpInside)
 
-        bar.addSubview(chip)
         bar.addSubview(help)
         NSLayoutConstraint.activate([
-            chip.leadingAnchor.constraint(equalTo: bar.leadingAnchor),
-            chip.topAnchor.constraint(equalTo: bar.topAnchor),
-            chip.bottomAnchor.constraint(equalTo: bar.bottomAnchor),
             help.trailingAnchor.constraint(equalTo: bar.trailingAnchor),
-            help.centerYAnchor.constraint(equalTo: chip.centerYAnchor)
+            help.topAnchor.constraint(equalTo: bar.topAnchor),
+            help.bottomAnchor.constraint(equalTo: bar.bottomAnchor)
         ])
         return bar
     }
@@ -137,7 +109,7 @@ final class HomeViewController: UIViewController {
         title.translatesAutoresizingMaskIntoConstraints = false
 
         let subtitle = Make.label(
-            "Paste a cooking video link and let AI build your grocery list.",
+            "Share a cooking video link and let AI build your grocery list.",
             font: Theme.Font.body(), color: Theme.Color.textSecondary
         )
 
@@ -161,8 +133,8 @@ final class HomeViewController: UIViewController {
         bg.pin(to: container)
 
         // Static "AI Recipe" image using SF Symbol + food emojis (no play control).
-        let imageView = UIImageView(image: UIImage(systemName: "photo.on.rectangle.angled"))
-        imageView.tintColor = UIColor.white.withAlphaComponent(0.15)
+        let imageView = UIImageView(image: UIImage(systemName: "fork.knife.circle.fill"))
+        imageView.tintColor = UIColor.white.withAlphaComponent(0.85)
         imageView.contentMode = .scaleAspectFit
         imageView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -190,7 +162,7 @@ final class HomeViewController: UIViewController {
     private func makeInputCard() -> UIView {
         let card = Make.card()
 
-        let label = Make.label("Paste video link", font: Theme.Font.captionBold(),
+        let label = Make.label("Share a video link here", font: Theme.Font.captionBold(),
                                color: Theme.Color.textSecondary)
 
         let linkIcon = UIImageView(image: UIImage(systemName: "link"))
@@ -270,8 +242,10 @@ final class HomeViewController: UIViewController {
         chipRow.spacing = 12
         chipRow.distribution = .fillEqually
 
-        for recipe in SampleData.demoRecipes {
-            chipRow.addArrangedSubview(makeDemoChip(recipe))
+        for (index, recipe) in SampleData.demoRecipes.enumerated() {
+            let chip = makeDemoChip(recipe)
+            chip.tag = index
+            chipRow.addArrangedSubview(chip)
         }
 
         let stack = UIStackView(arrangedSubviews: [header, chipRow])
@@ -303,7 +277,7 @@ final class HomeViewController: UIViewController {
         card.addSubview(stack)
         stack.pin(to: card)
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(analyzeTapped))
+        let tap = UITapGestureRecognizer(target: self, action: #selector(demoRecipeTapped(_:)))
         card.addGestureRecognizer(tap)
         return card
     }
@@ -337,8 +311,34 @@ final class HomeViewController: UIViewController {
     // MARK: Actions
 
     @objc private func analyzeTapped() {
-        let vc = ProcessingViewController()
+        let link = linkField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // A shared link runs the real on-device extraction; an empty field
+        // keeps the sample-data demo flow.
+        let vc = ProcessingViewController(link: link.isEmpty ? nil : link)
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    /// Demo chip → straight to the ingredient list with that recipe's
+    /// hardcoded ingredients.
+    @objc private func demoRecipeTapped(_ sender: UITapGestureRecognizer) {
+        guard let index = sender.view?.tag,
+              SampleData.demoRecipes.indices.contains(index) else { return }
+        let items = SampleData.demoRecipes[index].ingredients.map {
+            ExtractedItem(name: $0.name, category: $0.category,
+                          estimatedQuantity: nil, unit: nil,
+                          evidence: [], confidence: 1)
+        }
+        let vc = ReviewEditViewController(items: items)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func helpTapped() {
+        let alert = UIAlertController(
+            title: "How it works",
+            message: "Share a cooking video link and AI extracts every ingredient into a grocery list.\n\nAnalysis usually takes 10–15 seconds. Your video is processed on-device — nothing is uploaded.",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Got it", style: .default))
+        present(alert, animated: true)
     }
 }
 

@@ -73,7 +73,7 @@ final class GroceryItemCell: UITableViewCell {
 
     func configure(with item: GroceryItem) {
         nameLabel.text = item.name
-        thumb.setEmoji(item.emoji)
+        thumb.setIcon(imageNamed: item.imageName, fallbackEmoji: item.emoji)
     }
 
     @objc private func deleteTapped() { onDelete?() }
@@ -104,6 +104,23 @@ final class ReviewEditViewController: UIViewController {
     private var consumables = SampleData.consumables
     private var equipment   = SampleData.equipment
     private var staples     = SampleData.staples.map { GroceryItem(name: $0, emoji: "🧂") }
+
+    /// Real on-device extraction results; nil keeps the sample-data demo.
+    init(items: [ExtractedItem]? = nil) {
+        super.init(nibName: nil, bundle: nil)
+        guard let items else { return }
+        func grocery(_ category: ItemCategory) -> [GroceryItem] {
+            items.filter { $0.category == category }.map {
+                GroceryItem(name: $0.name.capitalized,
+                            emoji: IngredientIcon.emoji(for: $0.name, category: $0.category),
+                            imageName: IngredientIcon.canonical($0.name))
+            }
+        }
+        consumables = grocery(.consumable)
+        equipment   = grocery(.equipment)
+        staples     = grocery(.staple)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     private var selectedTab: Tab = .toBuy
     private let tableView = UITableView(frame: .zero, style: .grouped)

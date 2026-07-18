@@ -43,6 +43,18 @@ final class ProcessingViewController: UIViewController {
     private var progress: CGFloat = 0
     private var timer: Timer?
 
+    /// Link to actually analyze; nil = pure demo animation with sample data.
+    private let link: String?
+    private let viewModel = ExtractionViewModel()
+    private var extractionTask: Task<Void, Never>?
+    private var extractionDone = false
+
+    init(link: String? = nil) {
+        self.link = link
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Theme.Color.background
@@ -54,12 +66,40 @@ final class ProcessingViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         startAnalysis()
+        startExtraction()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         timer?.invalidate()
         timer = nil
+        extractionTask?.cancel()
+    }
+
+    /// Kick off the real on-device extraction behind the progress animation.
+    private func startExtraction() {
+        guard let link, extractionTask == nil else { return }
+        extractionTask = Task { [weak self] in
+            await self?.viewModel.extract(fromLink: link)
+            guard let self, !Task.isCancelled else { return }
+            if let message = self.viewModel.errorMessage {
+                self.showError(message)
+            } else {
+                self.extractionDone = true   // releases the ring's 92% ceiling
+            }
+        }
+    }
+
+    private func showError(_ message: String) {
+        guard navigationController?.topViewController === self else { return }
+        timer?.invalidate()
+        timer = nil
+        let alert = UIAlertController(title: "Couldn't analyze video",
+                                      message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            self?.navigationController?.popViewController(animated: true)
+        })
+        present(alert, animated: true)
     }
 
     // MARK: Progress driver
@@ -71,8 +111,13 @@ final class ProcessingViewController: UIViewController {
         timer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] t in
             guard let self else { t.invalidate(); return }
             // Ease-out: slow down as we approach 100% so it feels like real work.
+            // With a real link, hold at 92% until the extraction actually returns.
+            let ceiling: CGFloat = (self.link == nil || self.extractionDone) ? 1 : 0.92
             let remaining = 1 - self.progress
-            self.progress = min(1, self.progress + max(0.004, remaining * 0.02))
+            let creep = self.progress + max(0.004, remaining * 0.02)
+            // Real pipeline progress (byte-accurate while the video downloads)
+            // can outrun the cosmetic creep; show whichever is further along.
+            self.progress = min(ceiling, max(creep, CGFloat(self.viewModel.progress)))
             self.ring.setProgress(self.progress, animated: false)
             self.updateSteps()
 
@@ -258,7 +303,7 @@ final class ProcessingViewController: UIViewController {
 
     private func advance() {
         guard navigationController?.topViewController === self else { return }
-        let vc = ReviewEditViewController()
+        let vc = ReviewEditViewController(items: link == nil ? nil : viewModel.items)
         navigationController?.pushViewController(vc, animated: true)
     }
 }
