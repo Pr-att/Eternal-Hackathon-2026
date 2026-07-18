@@ -78,9 +78,15 @@ struct IngredientExtractor {
         add(.transcript, transcript, cap: 1800)
         add(.text, text, cap: 2500)
         if let videoPath, !videoPath.isEmpty {
-            let frames = try await Self.analyzeVideo(videoPath)
-            add(.ocr, frames.ocr, cap: 2000)
-            add(.vision, frames.vision, cap: 500)
+            do {
+                let frames = try await Self.analyzeVideo(videoPath)
+                add(.ocr, frames.ocr, cap: 2000)
+                add(.vision, frames.vision, cap: 500)
+            } catch {
+                // frames only supplement text evidence — an undecodable video or
+                // a Vision-less simulator shouldn't kill a text-backed extraction
+                guard !blocks.isEmpty else { throw error }
+            }
         }
         guard !blocks.isEmpty else { throw ExtractorError.emptyInput }
 
@@ -108,8 +114,9 @@ struct IngredientExtractor {
             }
             guard !cited.isEmpty else { return nil }
             var item = item
-            // the model sometimes snake_cases names, mimicking the JSON schema
+            // the model sometimes snake_cases names or pads them with spaces
             item.name = item.name.replacingOccurrences(of: "_", with: " ")
+                .trimmingCharacters(in: .whitespaces)
             item.evidence = cited
             item.confidence = min(0.99, 1 - cited.reduce(1) { $0 * (1 - Self.weight($1)) })
             return item

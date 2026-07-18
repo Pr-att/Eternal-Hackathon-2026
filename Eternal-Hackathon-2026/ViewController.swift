@@ -17,7 +17,7 @@ class ViewController: UIViewController {
 
     private let linkField: UITextField = {
         let field = UITextField()
-        field.placeholder = "direct .mp4 URL or recipe text"
+        field.placeholder = "YouTube/Instagram link, .mp4 URL, or recipe text"
         field.borderStyle = .roundedRect
         field.autocapitalizationType = .none
         field.autocorrectionType = .no
@@ -37,7 +37,7 @@ class ViewController: UIViewController {
         let view = UITextView()
         view.isEditable = false
         view.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
-        view.text = "Results appear here.\n\nTip: run\n  python3 backend/ingestion.py <youtube/insta link>\nand paste the \"video_url\" value."
+        view.text = "Results appear here.\n\nTip: start the backend first —\n  cd backend && .venv/bin/uvicorn server:app --port 8000\nthen paste a YouTube/Instagram link."
         return view
     }()
 
