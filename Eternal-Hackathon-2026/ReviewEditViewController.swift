@@ -152,7 +152,7 @@ final class ReviewEditViewController: UIViewController {
 
     private var consumables = SampleData.consumables
     private var equipment   = SampleData.equipment
-    private var staples     = SampleData.staples.map { GroceryItem(name: $0, emoji: "🧂") }
+    private var staples     = SampleData.staples.map { GroceryItem(name: $0, emoji: "🧂", isSelected: false) }
 
     /// Real on-device extraction results; nil keeps the sample-data demo.
     init(items: [ExtractedItem]? = nil) {
@@ -162,7 +162,9 @@ final class ReviewEditViewController: UIViewController {
             items.filter { $0.category == category }.map {
                 GroceryItem(name: $0.name.capitalized,
                             emoji: IngredientIcon.emoji(for: $0.name, category: $0.category),
-                            imageName: IngredientIcon.canonical($0.name))
+                            imageName: IngredientIcon.canonical($0.name),
+                            // only consumables land in the cart by default
+                            isSelected: category == .consumable)
             }
         }
         consumables = grocery(.consumable)

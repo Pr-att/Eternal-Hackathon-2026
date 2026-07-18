@@ -218,9 +218,9 @@ enum SampleData {
     ]
 
     static let equipment: [GroceryItem] = [
-        GroceryItem(name: "Pressure Cooker", emoji: "🍲"),
-        GroceryItem(name: "Mixer Grinder",   emoji: "🌀"),
-        GroceryItem(name: "Tawa / Pan",      emoji: "🍳")
+        GroceryItem(name: "Pressure Cooker", emoji: "🍲", isSelected: false),
+        GroceryItem(name: "Mixer Grinder",   emoji: "🌀", isSelected: false),
+        GroceryItem(name: "Tawa / Pan",      emoji: "🍳", isSelected: false)
     ]
 
     static let staples: [String] = ["Salt", "Water", "Oil", "Black Pepper"]

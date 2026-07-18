@@ -33,14 +33,18 @@ func selfcheck() {
          item("ghost", [.text]),                     // cites a block not provided, dropped
          item("pizza", [.vision]),
          item("paratha", [.frames, .transcript]),    // iOS 27 image path + transcript
-         item("tawa", [.frames])],                   // frames-only: suggest, never auto-add
+         item("tawa", [.frames]),                    // frames-only: suggest, never auto-add
+         item("onion", [.ocr]),                      // same item from two chunked model
+         item("onion", [.frames])],                  // calls: merged, evidence unioned
         provided: [.ocr, .transcript, .vision, .frames])
-    precondition(out.map(\.name) == ["tomato", "paneer", "pizza", "paratha", "tawa"])
+    precondition(out.map(\.name) == ["tomato", "paneer", "pizza", "paratha", "tawa", "onion"])
     precondition(out[0].confidence > 0.95 && out[0].evidence == [.ocr, .transcript])
     precondition(abs(out[1].confidence - 0.82) < 1e-9 && out[1].evidence == [.transcript])
     precondition(abs(out[2].confidence - 0.42) < 1e-9)
     precondition(abs(out[3].confidence - 0.946) < 1e-9)  // 1 - (1-0.7)(1-0.82)
     precondition(abs(out[4].confidence - 0.7) < 1e-9)
+    precondition(out[5].evidence == [.ocr, .frames])
+    precondition(abs(out[5].confidence - 0.955) < 1e-6)  // 1 - (1-0.85)(1-0.7)
     print("selfcheck ok")
 }
 
