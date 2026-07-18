@@ -2,3 +2,6 @@
 xcuserdata/
 DerivedData/
 *.xcuserstate
+backend/.venv/
+__pycache__/
+backend/apple_extract
