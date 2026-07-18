@@ -227,6 +227,7 @@ final class CircularProgressView: UIView {
 final class ThumbnailView: UIView {
 
     private let label = UILabel()
+    private let imageView = UIImageView()
 
     init(emoji: String, size: CGFloat = 40, corner: CGFloat = 12) {
         super.init(frame: .zero)
@@ -240,14 +241,38 @@ final class ThumbnailView: UIView {
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
+
+        imageView.contentMode = .scaleAspectFit
+        imageView.isHidden = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(imageView)
+
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: centerYAnchor)
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
+            imageView.topAnchor.constraint(equalTo: topAnchor, constant: size * 0.15),
+            imageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -size * 0.15),
+            imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: size * 0.15),
+            imageView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -size * 0.15)
         ])
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func setEmoji(_ emoji: String) { label.text = emoji }
+    func setEmoji(_ emoji: String) { setIcon(imageNamed: nil, fallbackEmoji: emoji) }
+
+    /// Shows the asset-catalog image (SVGs supported) when it exists,
+    /// otherwise the emoji — so icons upgrade as design adds assets.
+    func setIcon(imageNamed name: String?, fallbackEmoji: String) {
+        if let name, let image = UIImage(named: name) {
+            imageView.image = image
+            imageView.isHidden = false
+            label.isHidden = true
+        } else {
+            label.text = fallbackEmoji
+            label.isHidden = false
+            imageView.isHidden = true
+        }
+    }
 }
 
 // MARK: - Small count badge (e.g. the "8" pills)
