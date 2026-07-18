@@ -17,18 +17,24 @@ final class GroceryItemCell: UITableViewCell {
     private let thumb = ThumbnailView(emoji: "🍅", size: 40)
     private let nameLabel = Make.label("", font: Theme.Font.bodyMedium(), color: Theme.Color.textPrimary)
 
-    // Quantity stepper: [−] qty [+]
+    // Quantity stepper: [−] qty [+]  (shown when the item is in the cart)
     private let stepper = UIView()
     private let minusButton = UIButton(type: .system)
     private let plusButton = UIButton(type: .system)
     private let qtyLabel = Make.label("1", font: Theme.Font.bodyMedium(), color: Theme.Color.textPrimary, align: .center)
 
+    // "Add" pill shown instead of the stepper when the item is NOT in the cart.
+    private let addButton = UIButton(type: .system)
+
     private var quantity = 1
 
     /// Fired when the quantity changes; passes the new value (always ≥ 1).
     var onQuantityChange: ((Int) -> Void)?
-    /// Fired when "−" is tapped at quantity 1 — i.e. the user removes the item.
+    /// Fired when "−" is tapped at quantity 1 — i.e. the user takes the item
+    /// out of the cart (it stays in the list, showing an "Add" button again).
     var onRemove: (() -> Void)?
+    /// Fired when the "Add" button is tapped — put the item into the cart.
+    var onAdd: (() -> Void)?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -49,8 +55,9 @@ final class GroceryItemCell: UITableViewCell {
         thumb.translatesAutoresizingMaskIntoConstraints = false
 
         buildStepper()
+        buildAddButton()
 
-        let stack = UIStackView(arrangedSubviews: [thumb, nameLabel, UIView(), stepper])
+        let stack = UIStackView(arrangedSubviews: [thumb, nameLabel, UIView(), stepper, addButton])
         stack.spacing = 12
         stack.alignment = .center
         stack.isLayoutMarginsRelativeArrangement = true
@@ -71,13 +78,16 @@ final class GroceryItemCell: UITableViewCell {
     }
 
     private func buildStepper() {
+        // Small glyphs so the stepper reads as a compact control rather than
+        // two chunky buttons.
+        let glyphConfig = UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
         for button in [minusButton, plusButton] {
             button.tintColor = Theme.Color.green   // match the "Ingredients" accent
             button.translatesAutoresizingMaskIntoConstraints = false
-            button.widthAnchor.constraint(equalToConstant: 30).isActive = true
+            button.widthAnchor.constraint(equalToConstant: 22).isActive = true
         }
-        minusButton.setImage(UIImage(systemName: "minus"), for: .normal)
-        plusButton.setImage(UIImage(systemName: "plus"), for: .normal)
+        minusButton.setImage(UIImage(systemName: "minus", withConfiguration: glyphConfig), for: .normal)
+        plusButton.setImage(UIImage(systemName: "plus", withConfiguration: glyphConfig), for: .normal)
         minusButton.addTarget(self, action: #selector(minusTapped), for: .touchUpInside)
         plusButton.addTarget(self, action: #selector(plusTapped), for: .touchUpInside)
 
@@ -104,12 +114,41 @@ final class GroceryItemCell: UITableViewCell {
         ])
     }
 
+    private func buildAddButton() {
+        var config = UIButton.Configuration.plain()
+        config.image = UIImage(systemName: "plus",
+                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold))
+        config.imagePadding = 4
+        config.attributedTitle = AttributedString("Add",
+            attributes: AttributeContainer([.font: Theme.Font.captionBold()]))
+        config.contentInsets = .init(top: 6, leading: 12, bottom: 6, trailing: 12)
+        config.baseForegroundColor = Theme.Color.green
+        addButton.configuration = config
+        addButton.backgroundColor = Theme.Color.greenSoftFill
+        addButton.layer.cornerRadius = 10
+        addButton.layer.borderWidth = 1
+        addButton.layer.borderColor = Theme.Color.green.withAlphaComponent(0.5).cgColor
+        addButton.setContentHuggingPriority(.required, for: .horizontal)
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        addButton.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
+    }
+
     func configure(with item: GroceryItem) {
         nameLabel.text = item.name
         thumb.setEmoji(item.emoji)
         quantity = max(1, item.quantity)
         qtyLabel.text = "\(quantity)"
+
+        // In the cart → show the stepper; not in the cart → show "Add".
+        let inCart = item.isSelected
+        stepper.isHidden = !inCart
+        addButton.isHidden = inCart
+        // Dim the row slightly while it's not in the cart.
+        thumb.alpha = inCart ? 1.0 : 0.5
+        nameLabel.textColor = inCart ? Theme.Color.textPrimary : Theme.Color.textSecondary
     }
+
+    @objc private func addTapped() { onAdd?() }
 
     @objc private func minusTapped() {
         guard quantity > 1 else { onRemove?(); return }
@@ -324,21 +363,11 @@ final class ReviewEditViewController: UIViewController {
         bar.layer.borderColor = Theme.Color.stroke.cgColor
         bar.translatesAutoresizingMaskIntoConstraints = false
 
-        let lock = UIImageView(image: UIImage(systemName: "lock.fill"))
-        lock.tintColor = Theme.Color.green
-        lock.contentMode = .scaleAspectFit
-        lock.translatesAutoresizingMaskIntoConstraints = false
-        lock.widthAnchor.constraint(equalToConstant: 20).isActive = true
-
         itemCountLabel.font = Theme.Font.headline()
         let sub = Make.label("Ready to add", font: Theme.Font.caption(), color: Theme.Color.textSecondary)
-        let textStack = UIStackView(arrangedSubviews: [itemCountLabel, sub])
-        textStack.axis = .vertical
-        textStack.spacing = 2
-
-        let leftStack = UIStackView(arrangedSubviews: [lock, textStack])
-        leftStack.spacing = 10
-        leftStack.alignment = .center
+        let leftStack = UIStackView(arrangedSubviews: [itemCountLabel, sub])
+        leftStack.axis = .vertical
+        leftStack.spacing = 2
 
         let cont = GradientButton(title: "Continue", systemImage: "arrow.right", trailing: true)
         cont.translatesAutoresizingMaskIntoConstraints = false
@@ -366,8 +395,22 @@ final class ReviewEditViewController: UIViewController {
     // MARK: Helpers
 
     private func refreshCounts() {
-        let total = consumables.count + equipment.count + staples.count
+        let inCart = { (items: [GroceryItem]) in items.filter { $0.isSelected }.count }
+        let total = inCart(consumables) + inCart(equipment) + inCart(staples)
         itemCountLabel.text = "\(total) items"
+    }
+
+    /// Toggles whether the item at `row` is in the cart. The row stays visible;
+    /// only its trailing control (stepper ⇆ Add) changes.
+    private func setSelection(at row: Int, selected: Bool) {
+        var items = currentItems
+        guard row < items.count else { return }
+        items[row].isSelected = selected
+        if selected { items[row].quantity = max(1, items[row].quantity) }
+        setItems(items)
+        refreshCounts()
+        rebuildTabTitles()
+        tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
     }
 
     private func setItems(_ items: [GroceryItem]) {
@@ -404,10 +447,11 @@ final class ReviewEditViewController: UIViewController {
     }
 
     @objc private func continueTapped() {
+        // Only items the user kept in the cart flow through to the order.
         let vc = SummaryOrderViewController(
-            consumables: consumables,
-            equipment: equipment,
-            staples: staples.map { $0.name })
+            consumables: consumables.filter { $0.isSelected },
+            equipment: equipment.filter { $0.isSelected },
+            staples: staples.filter { $0.isSelected }.map { $0.name })
         navigationController?.pushViewController(vc, animated: true)
     }
 
@@ -443,7 +487,8 @@ final class ReviewEditViewController: UIViewController {
     }
 
     private func rebuildTabTitles() {
-        let counts = [consumables.count, equipment.count, staples.count]
+        let cartCount = { (items: [GroceryItem]) in items.filter { $0.isSelected }.count }
+        let counts = [cartCount(consumables), cartCount(equipment), cartCount(staples)]
         for (i, button) in tabButtons.enumerated() {
             guard let tab = Tab(rawValue: i) else { continue }
             button.configuration?.attributedTitle = AttributedString(
@@ -475,7 +520,11 @@ extension ReviewEditViewController: UITableViewDataSource, UITableViewDelegate {
         }
         cell.onRemove = { [weak self, weak cell] in
             guard let self, let cell, let idx = self.tableView.indexPath(for: cell) else { return }
-            self.removeItem(at: idx.row)
+            self.setSelection(at: idx.row, selected: false)
+        }
+        cell.onAdd = { [weak self, weak cell] in
+            guard let self, let cell, let idx = self.tableView.indexPath(for: cell) else { return }
+            self.setSelection(at: idx.row, selected: true)
         }
         return cell
     }
@@ -491,7 +540,7 @@ extension ReviewEditViewController: UITableViewDataSource, UITableViewDelegate {
         case .staples:   titleText = "STAPLES"
         }
         let title = Make.label(titleText, font: Theme.Font.captionBold(), color: Theme.Color.green)
-        let badge = CountBadge(count: currentItems.count)
+        let badge = CountBadge(count: currentItems.filter { $0.isSelected }.count)
 
         let row = UIStackView(arrangedSubviews: [title, UIView(), badge])
         row.alignment = .center

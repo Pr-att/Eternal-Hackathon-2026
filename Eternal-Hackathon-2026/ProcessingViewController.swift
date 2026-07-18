@@ -268,7 +268,6 @@ final class ProcessingViewController: UIViewController {
         let rows: [(String, String)] = [
             ("play.rectangle.fill", "Watching your video"),
             ("pencil.and.outline",  "Extracting ingredients"),
-            ("fork.knife",          "Matching with nearby products"),
             ("cart.fill",           "Building the perfect grocery list")
         ]
 
