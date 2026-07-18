@@ -2,7 +2,11 @@
 //  SceneDelegate.swift
 //  Eternal-Hackathon-2026
 //
-//  Created by Pratyush Pandey  on 7/18/26.
+//  Handles the two ways shared content reaches the app:
+//   1. The extension opens `eternalhackathon://shared` → openURLContexts.
+//   2. The app was terminated when the extension ran → the URL arrives in
+//      `willConnectTo` via connectionOptions, and/or we sweep pending items
+//      when the scene becomes active.
 //
 
 import UIKit
@@ -11,42 +15,54 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+               options connectionOptions: UIScene.ConnectionOptions) {
         guard let _ = (scene as? UIWindowScene) else { return }
+
+        // Cold start via deep link: the URL is delivered here, not in
+        // openURLContexts.
+        if let urlContext = connectionOptions.urlContexts.first {
+            route(AppLaunchManager.shared.handle(url: urlContext.url))
+        }
     }
 
-    func sceneDidDisconnect(_ scene: UIScene) {
-        // Called as the scene is being released by the system.
-        // This occurs shortly after the scene enters the background, or when its session is discarded.
-        // Release any resources associated with this scene that can be re-created the next time the scene connects.
-        // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
+    /// Warm open: app already running when the extension fired the URL.
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
+        route(AppLaunchManager.shared.handle(url: url))
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
-        // Called when the scene has moved from an inactive state to an active state.
-        // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        // Belt-and-suspenders: pick up anything the extension queued even if
+        // the deep link didn't route us (e.g. user opened the app by hand).
+        AppLaunchManager.shared.handleAppBecameActive()
     }
 
-    func sceneWillResignActive(_ scene: UIScene) {
-        // Called when the scene will move from an active state to an inactive state.
-        // This may occur due to temporary interruptions (ex. an incoming phone call).
+    // MARK: - Routing
+
+    /// Presents the destination screen for a resolved route.
+    private func route(_ route: DeepLinkRoute) {
+        guard route == .sharedInbox else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.presentSharedInbox()
+        }
     }
 
-    func sceneWillEnterForeground(_ scene: UIScene) {
-        // Called as the scene transitions from the background to the foreground.
-        // Use this method to undo the changes made on entering the background.
+    private func presentSharedInbox() {
+        guard let root = window?.rootViewController else { return }
+        // Walk to the top-most presented controller so we push the inbox over
+        // whatever screen is currently on top, not just the root.
+        var top = root
+        while let presented = top.presentedViewController { top = presented }
+        // Avoid stacking multiple inbox screens.
+        if top is UINavigationController { return }
+
+        let inbox = SharedInboxViewController()
+        let nav = UINavigationController(rootViewController: inbox)
+        inbox.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            systemItem: .done,
+            primaryAction: UIAction { [weak nav] _ in nav?.dismiss(animated: true) })
+        nav.modalPresentationStyle = .fullScreen
+        top.present(nav, animated: true)
     }
-
-    func sceneDidEnterBackground(_ scene: UIScene) {
-        // Called as the scene transitions from the foreground to the background.
-        // Use this method to save data, release shared resources, and store enough scene-specific state information
-        // to restore the scene back to its current state.
-    }
-
-
 }
-

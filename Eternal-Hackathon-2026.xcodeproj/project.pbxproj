@@ -6,8 +6,45 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		30CB2BF8E81FBFF23BE2D54E /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DAC8A210EAEEA792CC110618 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		54CF9C5EADABDA3BCADB1158 /* ShareItemExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD096AD3AC05B9BB3C0A448 /* ShareItemExtractor.swift */; };
+		932A05DF890923C58138A59C /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4055B61DF66C775F22A946CA /* ShareViewController.swift */; };
+		B01BDD49463F1D16F727ACF0 /* ShareExtensionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C853392AB84BF088BBDD5AF1 /* ShareExtensionCoordinator.swift */; };
+		E87D8B15712CE67487FA383A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 649B627C12D4739E0C774514 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0DE890BEB418538BC16BC931 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5C47E194300B721D00F46B2B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9EC29F8267590AD86BECC623;
+			remoteInfo = ShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		00A9936C60180F8C2AE639AC /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				30CB2BF8E81FBFF23BE2D54E /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		4055B61DF66C775F22A946CA /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		4BD096AD3AC05B9BB3C0A448 /* ShareItemExtractor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareItemExtractor.swift; sourceTree = "<group>"; };
 		5C47E19C300B721D00F46B2B /* Eternal-Hackathon-2026.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Eternal-Hackathon-2026.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		649B627C12D4739E0C774514 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		C853392AB84BF088BBDD5AF1 /* ShareExtensionCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareExtensionCoordinator.swift; sourceTree = "<group>"; };
+		DAC8A210EAEEA792CC110618 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,6 +66,13 @@
 			path = "Eternal-Hackathon-2026";
 			sourceTree = "<group>";
 		};
+		5C47E1C0300B721E00F46B2B /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +83,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D776213A9724FFF60D0A084B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E87D8B15712CE67487FA383A /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,7 +98,10 @@
 			isa = PBXGroup;
 			children = (
 				5C47E19E300B721D00F46B2B /* Eternal-Hackathon-2026 */,
+				5C47E1C0300B721E00F46B2B /* Shared */,
 				5C47E19D300B721D00F46B2B /* Products */,
+				DBD9CCC01A0EA54718ADB40E /* Frameworks */,
+				9A33F90DD7743164CE3C7C5F /* ShareExtension */,
 			);
 			sourceTree = "<group>";
 		};
@@ -54,8 +109,36 @@
 			isa = PBXGroup;
 			children = (
 				5C47E19C300B721D00F46B2B /* Eternal-Hackathon-2026.app */,
+				DAC8A210EAEEA792CC110618 /* ShareExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9A33F90DD7743164CE3C7C5F /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				4055B61DF66C775F22A946CA /* ShareViewController.swift */,
+				C853392AB84BF088BBDD5AF1 /* ShareExtensionCoordinator.swift */,
+				4BD096AD3AC05B9BB3C0A448 /* ShareItemExtractor.swift */,
+			);
+			name = ShareExtension;
+			path = ShareExtension;
+			sourceTree = SOURCE_ROOT;
+		};
+		A439155C647B22E2A74FFE67 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				649B627C12D4739E0C774514 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		DBD9CCC01A0EA54718ADB40E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A439155C647B22E2A74FFE67 /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -68,20 +151,41 @@
 				5C47E198300B721D00F46B2B /* Sources */,
 				5C47E199300B721D00F46B2B /* Frameworks */,
 				5C47E19A300B721D00F46B2B /* Resources */,
+				00A9936C60180F8C2AE639AC /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4756EE4BCAC5D64425EF905B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5C47E19E300B721D00F46B2B /* Eternal-Hackathon-2026 */,
+				5C47E1C0300B721E00F46B2B /* Shared */,
+			);
+			name = "Eternal-Hackathon-2026";
+			productName = "Eternal-Hackathon-2026";
+			productReference = 5C47E19C300B721D00F46B2B /* Eternal-Hackathon-2026.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9EC29F8267590AD86BECC623 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4902B4FEAF86CB5966A41885 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				784E387D36B551395B621485 /* Sources */,
+				D776213A9724FFF60D0A084B /* Frameworks */,
+				894B995B9257718E9D6BFDB4 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				5C47E19E300B721D00F46B2B /* Eternal-Hackathon-2026 */,
+				5C47E1C0300B721E00F46B2B /* Shared */,
 			);
-			name = "Eternal-Hackathon-2026";
-			packageProductDependencies = (
-			);
-			productName = "Eternal-Hackathon-2026";
-			productReference = 5C47E19C300B721D00F46B2B /* Eternal-Hackathon-2026.app */;
-			productType = "com.apple.product-type.application";
+			name = ShareExtension;
+			productName = ShareExtension;
+			productReference = DAC8A210EAEEA792CC110618 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -113,12 +217,20 @@
 			projectRoot = "";
 			targets = (
 				5C47E19B300B721D00F46B2B /* Eternal-Hackathon-2026 */,
+				9EC29F8267590AD86BECC623 /* ShareExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5C47E19A300B721D00F46B2B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		894B995B9257718E9D6BFDB4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +247,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		784E387D36B551395B621485 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				932A05DF890923C58138A59C /* ShareViewController.swift in Sources */,
+				B01BDD49463F1D16F727ACF0 /* ShareExtensionCoordinator.swift in Sources */,
+				54CF9C5EADABDA3BCADB1158 /* ShareItemExtractor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4756EE4BCAC5D64425EF905B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ShareExtension;
+			target = 9EC29F8267590AD86BECC623 /* ShareExtension */;
+			targetProxy = 0DE890BEB418538BC16BC931 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		5C47E1B0300B721E00F46B2B /* Debug */ = {
@@ -143,6 +274,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Eternal-Hackathon-2026/Eternal-Hackathon-2026.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5QTW3RVA4Y;
@@ -153,6 +285,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -175,6 +308,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Eternal-Hackathon-2026/Eternal-Hackathon-2026.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5QTW3RVA4Y;
@@ -185,6 +319,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -255,7 +390,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -313,7 +448,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -323,9 +458,73 @@
 			};
 			name = Release;
 		};
+		8B701E567ED2488AD10A94F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5QTW3RVA4Y;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.hackathon.Eternal-Hackathon-2026.ShareExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		95D0E638B0AFB573FD25716E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5QTW3RVA4Y;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.hackathon.Eternal-Hackathon-2026.ShareExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4902B4FEAF86CB5966A41885 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B701E567ED2488AD10A94F2 /* Release */,
+				95D0E638B0AFB573FD25716E /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		5C47E197300B721D00F46B2B /* Build configuration list for PBXProject "Eternal-Hackathon-2026" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
