@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Eternal Hackathon</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSExtension</key>
+	<dict>
+		<!-- The class instantiated when the user taps our icon in the sheet. -->
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.share-services</string>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<!--
+			 Activation rule = the ONLY thing that decides whether iOS shows
+			 our app in a given share sheet.
+
+			 We use Apple's DICTIONARY form (NSExtensionActivationSupports*)
+			 instead of a raw predicate string. This is the recommended,
+			 reliable way — in particular a hand-written predicate with
+			 `UTI-CONFORMS-TO "public.url"` does NOT match Safari's web URLs,
+			 which is why the app never appeared when sharing a Safari page.
+			 `NSExtensionActivationSupportsWebURLWithMaxCount` is the key that
+			 specifically matches http/https links from Safari.
+
+			 Each `...WithMaxCount = N` means "activate for up to N of these".
+			 Use 0 to disable that type. To support more types later, add the
+			 matching key here and a branch in ShareItemExtractor.
+			-->
+			<key>NSExtensionActivationRule</key>
+			<dict>
+				<!-- Safari / web links (http, https). THE fix for your issue. -->
+				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+				<integer>1</integer>
+				<!-- Photos, screenshots, images from any app. -->
+				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>10</integer>
+				<!-- PDFs and other files (Files app, Mail attachments…). -->
+				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
+				<integer>10</integer>
+				<!-- Videos / movies. -->
+				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
+				<integer>5</integer>
+				<!-- Selected plain text (Notes, articles…). -->
+				<key>NSExtensionActivationSupportsText</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>
