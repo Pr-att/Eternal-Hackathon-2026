@@ -131,6 +131,7 @@ struct IngredientExtractor {
         case .text: 0.95
         case .ocr: 0.85
         case .transcript: 0.82
+        case .frames: 0.7   // model saw actual pixels; beats classifier labels, below named-in-text
         case .description, .title: 0.55
         case .vision: 0.42
         }
