@@ -14,6 +14,7 @@ struct IngredientExtractor {
         case modelUnavailable(String)
         case emptyInput
         case unreadableVideo
+        case visionUnavailable(String)
 
         var errorDescription: String? {
             switch self {
@@ -23,6 +24,8 @@ struct IngredientExtractor {
                 return "no text or video to analyze"
             case .unreadableVideo:
                 return "couldn't decode the video (likely a VP9/AV1 stream, which Apple devices can't play, or a failed download) — get a fresh H.264 video_url from ingestion.py"
+            case .visionUnavailable(let detail):
+                return "video frame analysis unavailable (\(detail)) — the iOS simulator can't run Vision's neural models; test the video path on a real device or via backend/extraction.py, or paste recipe text instead"
             }
         }
     }
@@ -152,6 +155,7 @@ struct IngredientExtractor {
         var seenLines = Set<String>()
         var ocrLines: [String] = []
         var labelCounts: [String: Int] = [:]
+        var visionError: (any Error)?
 
         for await result in gen.images(for: times) {
             guard let image = try? result.image else { continue }
@@ -159,7 +163,9 @@ struct IngredientExtractor {
             let textReq = VNRecognizeTextRequest()
             textReq.recognitionLevel = .accurate
             let classReq = VNClassifyImageRequest()
-            try? handler.perform([textReq, classReq])
+            // performed separately so a classify failure can't take OCR down with it
+            do { try handler.perform([textReq]) } catch { visionError = error }
+            do { try handler.perform([classReq]) } catch { visionError = error }
 
             for line in textReq.results?.compactMap({ $0.topCandidates(1).first?.string }) ?? []
             where seenLines.insert(line).inserted {
@@ -169,6 +175,13 @@ struct IngredientExtractor {
             for obs in classReq.results ?? [] where obs.confidence > 0.3 {
                 labelCounts[obs.identifier, default: 0] += 1
             }
+        }
+
+        // The iOS simulator can't run Vision's neural models ("Failed to create
+        // espresso context"; OCR just silently returns nothing). Zero evidence
+        // plus a Vision error means the environment failed, not an empty video.
+        if ocrLines.isEmpty, labelCounts.isEmpty, let visionError {
+            throw ExtractorError.visionUnavailable(visionError.localizedDescription)
         }
 
         let ocr = ocrLines.isEmpty ? nil : ocrLines.joined(separator: "\n")
