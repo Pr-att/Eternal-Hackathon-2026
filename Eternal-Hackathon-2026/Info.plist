@@ -20,6 +20,15 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Dev backend runs plain HTTP on the Mac's LAN IP; scoped ATS relaxation
+	 for local networking only (not NSAllowsArbitraryLoads). -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Connects to the recipe ingestion server running on your Mac during development.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -31,12 +31,16 @@ func selfcheck() {
          item("chicken", []),                        // no evidence: hallucination, dropped
          item("paneer", [.transcript, .transcript]), // duplicate citation deduped
          item("ghost", [.text]),                     // cites a block not provided, dropped
-         item("pizza", [.vision])],
-        provided: [.ocr, .transcript, .vision])
-    precondition(out.map(\.name) == ["tomato", "paneer", "pizza"])
+         item("pizza", [.vision]),
+         item("paratha", [.frames, .transcript]),    // iOS 27 image path + transcript
+         item("tawa", [.frames])],                   // frames-only: suggest, never auto-add
+        provided: [.ocr, .transcript, .vision, .frames])
+    precondition(out.map(\.name) == ["tomato", "paneer", "pizza", "paratha", "tawa"])
     precondition(out[0].confidence > 0.95 && out[0].evidence == [.ocr, .transcript])
     precondition(abs(out[1].confidence - 0.82) < 1e-9 && out[1].evidence == [.transcript])
     precondition(abs(out[2].confidence - 0.42) < 1e-9)
+    precondition(abs(out[3].confidence - 0.946) < 1e-9)  // 1 - (1-0.7)(1-0.82)
+    precondition(abs(out[4].confidence - 0.7) < 1e-9)
     print("selfcheck ok")
 }
 
