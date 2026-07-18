@@ -42,15 +42,27 @@ def ingest(url, cookies_from_browser=None):
 
 
 def _video_url(info):
-    """Direct media URL for frame extraction. Prefers progressive mp4 (has audio
-    too, so the same URL serves a future Whisper fallback). None if unavailable."""
+    """Direct media URL for frame extraction. Prefers H.264 with audio: Apple's
+    AVFoundation can't decode VP9/AV1, which Instagram often serves in .mp4
+    containers. None if unavailable."""
+    # vcodec "none" = no video track; None = unknown codec (keep those)
     fmts = [f for f in info.get("formats") or []
-            if f.get("url") and f.get("vcodec") not in (None, "none")]
+            if f.get("url") and f.get("vcodec") != "none"]
     if not fmts:
         return info.get("url")
-    # yt-dlp sorts formats worst -> best, so take the last match
-    mp4 = [f for f in fmts if f.get("ext") == "mp4" and f.get("acodec") not in (None, "none")]
-    return (mp4 or fmts)[-1]["url"]
+
+    def apple_ok(f):
+        return str(f.get("vcodec") or "").startswith(("avc", "h264", "hvc", "hev", "h265"))
+
+    with_audio = [f for f in fmts if f.get("acodec") not in (None, "none")]
+    # Instagram's progressive H.264 mp4s report vcodec=None; its DASH formats are VP9
+    unknown_mp4 = [f for f in fmts if f.get("vcodec") is None and f.get("ext") == "mp4"]
+    # yt-dlp sorts formats worst -> best, so take the last match in the best pool
+    for pool in ([f for f in with_audio if apple_ok(f)],
+                 [f for f in fmts if apple_ok(f)],
+                 unknown_mp4, with_audio, fmts):
+        if pool:
+            return pool[-1]["url"]
 
 
 def _transcript(info):

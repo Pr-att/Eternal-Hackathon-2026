@@ -50,4 +50,18 @@ assert _video_url({"formats": formats[:2]}) == "b"  # no progressive mp4 -> best
 assert _video_url({"formats": [formats[0]], "url": "direct"}) == "direct"
 assert _video_url({}) is None
 
+formats_vp9 = [  # Instagram case: VP9-in-mp4 with audio vs H.264 video-only
+    {"url": "v", "ext": "mp4", "vcodec": "vp09.00.31.08", "acodec": "mp4a"},
+    {"url": "h", "ext": "mp4", "vcodec": "avc1.64001f", "acodec": "none"},
+]
+assert _video_url({"formats": formats_vp9}) == "h"  # Apple-decodable beats has-audio
+assert _video_url({"formats": formats_vp9[:1]}) == "v"  # nothing decodable -> best effort
+
+formats_ig = [  # real Instagram shape: unknown-codec progressive mp4s + VP9 DASH
+    {"url": "p1", "ext": "mp4", "vcodec": None, "acodec": None},
+    {"url": "p2", "ext": "mp4", "vcodec": None, "acodec": None},
+    {"url": "dash", "ext": "mp4", "vcodec": "vp09.00.40.08", "acodec": "none"},
+]
+assert _video_url({"formats": formats_ig}) == "p2"  # progressive (H.264) over VP9 DASH
+
 print("ok")
