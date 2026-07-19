@@ -72,8 +72,14 @@ struct DemoRecipe {
     let emoji: String
     /// A short, appetizing summary shown above the ingredient list.
     let description: String
+    /// Quick facts shown as pills: total time, servings, difficulty.
+    let time: String
+    let serves: String
+    let difficulty: String
     /// Hardcoded ingredients shown when the chip is tapped (name, category).
     let ingredients: [(name: String, category: ItemCategory)]
+    /// Step-by-step cooking method.
+    let steps: [String]
 }
 
 /// Zero-asset product icons: map a model-emitted ingredient name (English,
@@ -181,6 +187,7 @@ enum SampleData {
     static let demoRecipes: [DemoRecipe] = [
         DemoRecipe(title: "Butter Chicken", emoji: "🍛",
                    description: "Tender chicken simmered in a velvety tomato-butter gravy, finished with cream and kasuri methi. A rich, mildly spiced North Indian classic best served with naan or rice.",
+                   time: "45 min", serves: "4", difficulty: "Medium",
                    ingredients: [
             ("chicken", .consumable), ("butter", .consumable), ("cream", .consumable),
             ("onion", .consumable), ("tomato", .consumable), ("curd", .consumable),
@@ -189,9 +196,17 @@ enum SampleData {
             ("coriander", .consumable),
             ("salt", .staple), ("oil", .staple),
             ("pan", .equipment)
+        ], steps: [
+            "Marinate the chicken in curd, ginger-garlic paste, salt and half the garam masala for at least 30 minutes.",
+            "Sear the marinated chicken in a hot pan with a little oil until lightly charred, then set aside.",
+            "In the same pan, sauté onions until golden, add pureed tomatoes and cook down until the oil separates.",
+            "Blend the gravy smooth, return to the pan, stir in butter and the remaining garam masala.",
+            "Add the chicken and a splash of water; simmer 10 minutes until cooked through.",
+            "Finish with cream and crushed kasuri methi, garnish with coriander and serve hot."
         ]),
         DemoRecipe(title: "Veg Biryani", emoji: "🍚",
                    description: "Fragrant basmati rice layered with spiced mixed vegetables, fresh mint and fried onions, slow-cooked on dum. A wholesome one-pot meal that's a party on its own.",
+                   time: "50 min", serves: "4", difficulty: "Medium",
                    ingredients: [
             ("basmati rice", .consumable), ("onion", .consumable), ("tomato", .consumable),
             ("curd", .consumable), ("ginger garlic paste", .consumable),
@@ -200,9 +215,17 @@ enum SampleData {
             ("biryani masala", .consumable), ("ghee", .consumable),
             ("salt", .staple), ("oil", .staple), ("water", .staple),
             ("pot", .equipment)
+        ], steps: [
+            "Soak the basmati rice for 20 minutes, then parboil in salted water until 70% cooked and drain.",
+            "Fry sliced onions in ghee until golden and crisp; reserve half for layering.",
+            "In the same pot, sauté ginger-garlic paste, tomatoes and biryani masala, then add the chopped vegetables.",
+            "Stir in curd and cook until the vegetables are tender and the masala thickens.",
+            "Layer the parboiled rice over the vegetables, scatter mint, coriander and fried onions on top.",
+            "Cover tightly and cook on low (dum) for 15 minutes; fluff gently before serving."
         ]),
         DemoRecipe(title: "Paneer Tikka", emoji: "🧆",
                    description: "Cubes of paneer marinated in spiced yogurt with peppers and onions, then charred on a tava for a smoky finish. A crowd-favourite vegetarian starter with a squeeze of lemon.",
+                   time: "30 min", serves: "3", difficulty: "Easy",
                    ingredients: [
             ("paneer", .consumable), ("curd", .consumable), ("capsicum", .consumable),
             ("onion", .consumable), ("ginger garlic paste", .consumable),
@@ -211,6 +234,12 @@ enum SampleData {
             ("mustard oil", .consumable),
             ("salt", .staple),
             ("tava", .equipment), ("skewers", .equipment)
+        ], steps: [
+            "Whisk curd with ginger-garlic paste, garam masala, red chili powder, salt, lemon juice and a little mustard oil.",
+            "Fold in cubed paneer with diced capsicum and onion; coat well and rest for 20 minutes.",
+            "Thread the paneer and vegetables onto skewers.",
+            "Cook on a hot, oiled tava, turning until all sides are charred and golden.",
+            "Crush kasuri methi over the top, finish with a squeeze of lemon and serve with mint chutney."
         ])
     ]
 

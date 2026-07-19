@@ -16,6 +16,9 @@ final class HomeViewController: UIViewController {
     /// Safari via the Share Extension can be dropped in here.
     private let linkField = UITextField()
 
+    /// Primary CTA — disabled while the link field is empty.
+    private let analyzeButton = GradientButton(title: "Analyze Video", systemImage: "sparkles")
+
     /// Inline recipe preview shown above the demo chips when one is tapped.
     private let recipeCard = UIView()
     private let recipeContentStack = UIStackView()
@@ -86,6 +89,7 @@ final class HomeViewController: UIViewController {
         let shared = SharedDataManager.shared.drainPendingItems()
         guard let link = shared.last(where: { $0.kind == .url })?.value else { return }
         linkField.text = link
+        updateAnalyzeState()
     }
 
     // MARK: Layout
@@ -279,6 +283,7 @@ final class HomeViewController: UIViewController {
         field.keyboardType = .URL
         field.autocapitalizationType = .none
         field.tintColor = Theme.Color.green
+        field.addTarget(self, action: #selector(linkFieldChanged), for: .editingChanged)
 
         let copy = UIButton(type: .system)
         copy.setImage(UIImage(systemName: "doc.on.clipboard"), for: .normal)
@@ -307,12 +312,22 @@ final class HomeViewController: UIViewController {
     }
 
     private func makeAnalyzeButton() -> UIView {
-        let button = GradientButton(title: "Analyze Video", systemImage: "sparkles")
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.heightAnchor.constraint(equalToConstant: Theme.Metric.ctaHeight).isActive = true
-        button.addTarget(self, action: #selector(analyzeTapped), for: .touchUpInside)
-        return button
+        analyzeButton.translatesAutoresizingMaskIntoConstraints = false
+        analyzeButton.heightAnchor.constraint(equalToConstant: Theme.Metric.ctaHeight).isActive = true
+        analyzeButton.addTarget(self, action: #selector(analyzeTapped), for: .touchUpInside)
+        updateAnalyzeState()
+        return analyzeButton
     }
+
+    /// Enables the Analyze button only when the link field has content.
+    private func updateAnalyzeState() {
+        let hasLink = !(linkField.text ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        analyzeButton.isEnabled = hasLink
+        analyzeButton.alpha = hasLink ? 1.0 : 0.5
+    }
+
+    @objc private func linkFieldChanged() { updateAnalyzeState() }
 
     private func makeOrDivider() -> UIView {
         func line() -> UIView {
@@ -441,6 +456,7 @@ final class HomeViewController: UIViewController {
         }
 
         linkField.text = pasted
+        updateAnalyzeState()
         // Brief highlight so it's clear the link landed in the field.
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         flashLinkField()
@@ -498,31 +514,100 @@ final class HomeViewController: UIViewController {
         headerRow.alignment = .center
         recipeContentStack.addArrangedSubview(headerRow)
 
+        // Quick-facts pills: time · serves · difficulty.
+        let metaRow = UIStackView(arrangedSubviews: [
+            makeMetaPill("clock", recipe.time),
+            makeMetaPill("person.2", "Serves \(recipe.serves)"),
+            makeMetaPill("chart.bar", recipe.difficulty),
+            UIView()
+        ])
+        metaRow.spacing = 8
+        metaRow.alignment = .center
+        recipeContentStack.addArrangedSubview(metaRow)
+        recipeContentStack.setCustomSpacing(12, after: metaRow)
+
         // Proper recipe description.
         let desc = Make.label(recipe.description, font: Theme.Font.body(),
                               color: Theme.Color.textSecondary, lines: 0)
         recipeContentStack.addArrangedSubview(desc)
         recipeContentStack.setCustomSpacing(14, after: desc)
 
-        let caption = Make.label("What you'll need · \(recipe.ingredients.count) ingredients",
-                                 font: Theme.Font.captionBold(), color: Theme.Color.textPrimary)
-        recipeContentStack.addArrangedSubview(caption)
+        // Step-by-step method.
+        let methodTitle = Make.label("Method · \(recipe.steps.count) steps",
+                                     font: Theme.Font.captionBold(), color: Theme.Color.textPrimary)
+        recipeContentStack.addArrangedSubview(methodTitle)
 
-        // One row per ingredient: emoji + name.
-        for ingredient in recipe.ingredients {
-            let emoji = IngredientIcon.emoji(for: ingredient.name, category: ingredient.category)
-            let icon = Make.label(emoji, font: .systemFont(ofSize: 18), color: Theme.Color.textPrimary)
-            icon.setContentHuggingPriority(.required, for: .horizontal)
-            let name = Make.label(ingredient.name.capitalized,
-                                  font: Theme.Font.body(), color: Theme.Color.textPrimary)
-            let row = UIStackView(arrangedSubviews: [icon, name])
+        for (i, step) in recipe.steps.enumerated() {
+            let number = Make.label("\(i + 1)", font: Theme.Font.captionBold(),
+                                    color: .white, align: .center)
+            number.backgroundColor = Theme.Color.green
+            number.layer.cornerRadius = 11
+            number.layer.masksToBounds = true
+            number.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                number.widthAnchor.constraint(equalToConstant: 22),
+                number.heightAnchor.constraint(equalToConstant: 22)
+            ])
+            number.setContentHuggingPriority(.required, for: .horizontal)
+
+            let text = Make.label(step, font: Theme.Font.body(),
+                                  color: Theme.Color.textSecondary, lines: 0)
+
+            let row = UIStackView(arrangedSubviews: [number, text])
             row.spacing = 10
-            row.alignment = .center
+            row.alignment = .top
             recipeContentStack.addArrangedSubview(row)
         }
 
+        // CTA: add this recipe's ingredients straight to the editable list
+        // (the behaviour the demo chips used to trigger on tap).
+        if let last = recipeContentStack.arrangedSubviews.last {
+            recipeContentStack.setCustomSpacing(16, after: last)
+        }
+        let addButton = GradientButton(title: "Add ingredients to list", systemImage: "cart.badge.plus")
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        addButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        addButton.addAction(UIAction { [weak self] _ in self?.openReview(with: recipe) },
+                            for: .touchUpInside)
+        recipeContentStack.addArrangedSubview(addButton)
+
         recipeCard.isHidden = false
         UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    /// Pushes the editable list pre-filled with this recipe's ingredients.
+    private func openReview(with recipe: DemoRecipe) {
+        let items = recipe.ingredients.map {
+            ExtractedItem(name: $0.name, category: $0.category,
+                          estimatedQuantity: nil, unit: nil,
+                          evidence: [], confidence: 1)
+        }
+        navigationController?.pushViewController(ReviewEditViewController(items: items), animated: true)
+    }
+
+    /// Small icon + text pill used for a recipe's quick facts.
+    private func makeMetaPill(_ symbol: String, _ text: String) -> UIView {
+        let pill = UIView()
+        pill.backgroundColor = Theme.Color.surfaceElevated
+        pill.layer.cornerRadius = 11
+        pill.translatesAutoresizingMaskIntoConstraints = false
+
+        let icon = UIImageView(image: UIImage(systemName: symbol,
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: 10, weight: .semibold)))
+        icon.tintColor = Theme.Color.green
+        icon.contentMode = .scaleAspectFit
+        icon.setContentHuggingPriority(.required, for: .horizontal)
+
+        let label = Make.label(text, font: Theme.Font.caption(), color: Theme.Color.textSecondary)
+
+        let row = UIStackView(arrangedSubviews: [icon, label])
+        row.spacing = 5
+        row.alignment = .center
+        row.isLayoutMarginsRelativeArrangement = true
+        row.layoutMargins = .init(top: 5, left: 9, bottom: 5, right: 10)
+        pill.addSubview(row)
+        row.pin(to: pill)
+        return pill
     }
 
     @objc private func closeRecipeDetail() {
