@@ -34,8 +34,8 @@ func selfcheck() {
          item("pizza", [.vision]),
          item("paratha", [.frames, .transcript]),    // iOS 27 image path + transcript
          item("tawa", [.frames]),                    // frames-only: suggest, never auto-add
-         item("onion", [.ocr]),                      // same item from two chunked model
-         item("onion", [.frames])],                  // calls: merged, evidence unioned
+         item("onions", [.ocr]),                     // same item from two chunked model
+         item("onion", [.frames])],                  // calls: plural-merged, singular kept
         provided: [.ocr, .transcript, .vision, .frames])
     precondition(out.map(\.name) == ["tomato", "paneer", "pizza", "paratha", "tawa", "onion"])
     precondition(out[0].confidence > 0.95 && out[0].evidence == [.ocr, .transcript])

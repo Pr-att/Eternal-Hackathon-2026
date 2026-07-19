@@ -194,13 +194,17 @@ final class ReviewEditViewController: UIViewController {
     init(items: [ExtractedItem]? = nil) {
         super.init(nibName: nil, bundle: nil)
         guard let items else { return }
+        // canonical-key dedup so synonyms/Hinglish/typos ("dahi"/"curd",
+        // "tawa"/"tava") can never show up twice in the cart
+        var seen = Set<String>()
         func grocery(_ category: ItemCategory) -> [GroceryItem] {
-            items.filter { $0.category == category }.map {
-                GroceryItem(name: $0.name.capitalized,
-                            emoji: IngredientIcon.emoji(for: $0.name, category: $0.category),
-                            imageName: IngredientIcon.canonical($0.name),
-                            // only consumables land in the cart by default
-                            isSelected: category == .consumable)
+            items.filter { $0.category == category }.compactMap {
+                guard seen.insert(IngredientIcon.canonical($0.name)).inserted else { return nil }
+                return GroceryItem(name: $0.name.capitalized,
+                                   emoji: IngredientIcon.emoji(for: $0.name, category: $0.category),
+                                   imageName: IngredientIcon.canonical($0.name),
+                                   // only consumables land in the cart by default
+                                   isSelected: category == .consumable)
             }
         }
         consumables = grocery(.consumable)

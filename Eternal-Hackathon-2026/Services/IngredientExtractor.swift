@@ -201,13 +201,20 @@ struct IngredientExtractor {
             // the model sometimes snake_cases names or pads them with spaces
             item.name = item.name.replacingOccurrences(of: "_", with: " ")
                 .trimmingCharacters(in: .whitespaces)
-            // same item seen again: union evidence, first occurrence keeps
-            // its category/quantity
-            if let i = index[item.name.lowercased()] {
+            // junk guard: OCR noise can yield empty or absurd "ingredients"
+            guard item.name.contains(where: \.isLetter), item.name.count <= 60 else { continue }
+            // ponytail: naive plural key ("onions" == "onion"); the app layer
+            // adds synonym/Hinglish dedup via IngredientIcon.canonical
+            var key = item.name.lowercased()
+            if key.hasSuffix("s") { key = String(key.dropLast()) }
+            // same item seen again: union evidence, keep the shorter (usually
+            // singular) name; first occurrence keeps category/quantity
+            if let i = index[key] {
+                if item.name.count < out[i].name.count { out[i].name = item.name }
                 for e in cited where !out[i].evidence.contains(e) { out[i].evidence.append(e) }
             } else {
                 item.evidence = cited.reduce(into: []) { if !$0.contains($1) { $0.append($1) } }
-                index[item.name.lowercased()] = out.count
+                index[key] = out.count
                 out.append(item)
             }
         }

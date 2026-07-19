@@ -110,14 +110,19 @@ final class ProcessingViewController: UIViewController {
         // as each step's threshold is reached.
         timer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] t in
             guard let self else { t.invalidate(); return }
-            // Ease-out: slow down as we approach 100% so it feels like real work.
-            // With a real link, hold at 92% until the extraction actually returns.
-            let ceiling: CGFloat = (self.link == nil || self.extractionDone) ? 1 : 0.92
-            let remaining = 1 - self.progress
-            let creep = self.progress + max(0.004, remaining * 0.02)
-            // Real pipeline progress (byte-accurate while the video downloads)
-            // can outrun the cosmetic creep; show whichever is further along.
-            self.progress = min(ceiling, max(creep, CGFloat(self.viewModel.progress)))
+            if self.link == nil {
+                // pure demo: ease-out sweep to 100% over ~3.5s
+                let remaining = 1 - self.progress
+                self.progress = min(1, self.progress + max(0.004, remaining * 0.02))
+            } else {
+                // Chase the real pipeline progress (byte-accurate download,
+                // frame walk, per-batch model calls) instead of racing ahead
+                // and stalling; a slow ~1%/s creep keeps the ring alive
+                // between real updates. Hold ≤98% until extraction returns.
+                let ceiling: CGFloat = self.extractionDone ? 1 : 0.98
+                let target = max(CGFloat(self.viewModel.progress), self.progress + 0.0004)
+                self.progress = min(ceiling, self.progress + max(0.0004, (target - self.progress) * 0.06))
+            }
             self.ring.setProgress(self.progress, animated: false)
             self.updateSteps()
 
